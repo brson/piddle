@@ -4,8 +4,10 @@ use rustyline::Editor;
 use rustyline::error::ReadlineError;
 
 mod parser;
+mod compiler;
 
 use parser::Expression;
+use compiler::Code;
 
 fn main() {
     let mut readline = Editor::<()>::new();
@@ -40,8 +42,8 @@ enum ReadEvalError {
     Readline(#[from] rustyline::error::ReadlineError),
     #[error("parsing input")]
     Nom(#[from] nom::Err<nom::error::Error<String>>),
-    #[error("parsing integer")]
-    ParseInt(#[from] std::num::ParseIntError),
+    #[error("compiling")]
+    Compile(#[from] compiler::CompileError),
 }
 
 fn read_eval(readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
@@ -64,25 +66,7 @@ fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalEr
 }
 
 fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
-    use parser::Intrinsic;
-
-    match expr {
-        Expression::Intrinsic(Intrinsic::Nop) => {
-            Ok(Code::Nop)
-        },
-        Expression::Intrinsic(Intrinsic::Clear) => {
-            Ok(Code::Clear)
-        }
-        Expression::Require(parser::Require { group, module }) => {
-            Ok(Code::Require(Require {
-                group, module,
-            }))
-        },
-        Expression::Literal(parser::Literal::Integer(v)) => {
-            let i = v.parse()?;
-            Ok(Code::LiteralInteger(i))
-        },
-    }
+    Ok(compiler::compile_expression(expr)?)
 }
 
 fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
@@ -92,20 +76,6 @@ fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
         Code::Require(_) => todo!(),
         Code::LiteralInteger(i) => Ok(Evaluation::Integer(i)),
     }
-}
-
-#[derive(Debug)]
-enum Code {
-    Nop,
-    Clear,
-    Require(Require),
-    LiteralInteger(i32),
-}
-
-#[derive(Debug, Clone)]
-pub struct Require {
-    pub group: String,
-    pub module: String,
 }
 
 #[derive(Debug)]
