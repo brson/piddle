@@ -55,10 +55,10 @@ fn read_eval(readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
 fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalError> {
     let line = readline.readline("> ")?;
 
+    readline.add_history_entry(line.clone());
+
     let (_, expr) = parser::expr(&line)
         .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
-
-    readline.add_history_entry(line);
 
     Ok(expr)
 }

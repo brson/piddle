@@ -31,8 +31,11 @@ pub enum Expression {
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
-    let (input, intrinsic) = intrinsic(input)?;
-    Ok((input, Expression::Intrinsic(intrinsic)))
+    let (_, expr) = alt((
+        map(intrinsic, Expression::Intrinsic),
+        map(require, Expression::Require),
+    ))(input)?;
+    Ok((input, expr))
 }
 
 #[derive(Debug, Clone)]
