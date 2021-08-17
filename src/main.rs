@@ -22,6 +22,7 @@ fn main() {
                 return
             },
             Err(err) => {
+                eprintln!("{:?}", err);
                 eprintln!("error: {}", err);
 
                 let mut source = err.source();
@@ -70,6 +71,9 @@ fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
         Expression::Intrinsic(Intrinsic::Nop) => {
             Ok(Code::Nop)
         },
+        Expression::Intrinsic(Intrinsic::Clear) => {
+            Ok(Code::Clear)
+        }
         Expression::Require(parser::Require { group, module }) => {
             Ok(Code::Require(Require {
                 group, module,
@@ -80,7 +84,8 @@ fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
 
 fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
     match expr {
-        Code::Nop => Ok(Evaluation::None),
+        Code::Nop => Ok(Evaluation::Nil),
+        Code::Clear => Ok(Evaluation::Nil),
         Code::Require(_) => todo!(),
     }
 }
@@ -88,6 +93,7 @@ fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
 #[derive(Debug)]
 enum Code {
     Nop,
+    Clear,
     Require(Require),
 }
 
@@ -99,5 +105,5 @@ pub struct Require {
 
 #[derive(Debug)]
 enum Evaluation {
-    None,
+    Nil,
 }

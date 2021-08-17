@@ -3,10 +3,10 @@ use nom::{
     branch::{
         alt,
     },
-    bytes::streaming::{
+    bytes::complete::{
         tag,
     },
-    character::streaming::{
+    character::complete::{
         alpha1,
         alphanumeric1,
         multispace1,
@@ -15,6 +15,9 @@ use nom::{
         map,
         value,
         recognize,
+        opt,
+        eof,
+        all_consuming,
     },
     multi::{
         many0,
@@ -41,6 +44,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
 #[derive(Debug, Clone)]
 pub enum Intrinsic {
     Nop,
+    Clear,
 }
 
 fn intrinsic(input: &str) -> IResult<&str, Intrinsic> {
@@ -48,7 +52,7 @@ fn intrinsic(input: &str) -> IResult<&str, Intrinsic> {
     let (input, _) = multispace1(input)?;
     let (input , intrinsic) = alt((
         value(Intrinsic::Nop, tag("nop")),
-        value(Intrinsic::Nop, tag("nop2")),
+        value(Intrinsic::Clear, tag("clear")),
     ))(input)?;
 
     Ok((input, intrinsic))
@@ -67,7 +71,6 @@ fn require(input: &str) -> IResult<&str, Require> {
     println!("{}", group);
     let (input, _) = tag("/")(input)?;
     let (input, module) = map(identifier, ToString::to_string)(input)?;
-    let (input, _) = tag(".")(input)?;
     println!("{}", module);
 
     Ok((input, Require {
