@@ -15,9 +15,6 @@ use nom::{
         map,
         value,
         recognize,
-        opt,
-        eof,
-        all_consuming,
     },
     multi::{
         many0,
