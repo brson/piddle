@@ -1,5 +1,4 @@
 use anyhow::Result;
-use thiserror::Error;
 use std::error::Error;
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
@@ -35,7 +34,7 @@ fn main() {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 enum ReadEvalError {
     #[error("reading line input")]
     Readline(#[from] rustyline::error::ReadlineError),
