@@ -5,9 +5,11 @@ use rustyline::error::ReadlineError;
 
 mod parser;
 mod compiler;
+mod interpreter;
 
 use parser::Expression;
 use compiler::Code;
+use interpreter::Evaluation;
 
 fn main() {
     let mut readline = Editor::<()>::new();
@@ -44,6 +46,8 @@ enum ReadEvalError {
     Nom(#[from] nom::Err<nom::error::Error<String>>),
     #[error("compiling")]
     Compile(#[from] compiler::CompileError),
+    #[error("running")]
+    Run(#[from] interpreter::RunError),
 }
 
 fn read_eval(readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
@@ -70,29 +74,5 @@ fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
 }
 
 fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
-    match expr {
-        Code::Nop => Ok(Evaluation::Nil),
-        Code::Clear => Ok(Evaluation::Nil),
-        Code::Require(_) => todo!(),
-        Code::LiteralInteger(i) => Ok(Evaluation::Integer(i)),
-    }
-}
-
-#[derive(Debug)]
-enum Evaluation {
-    Nil,
-    Integer(i32),
-}
-
-impl std::fmt::Display for Evaluation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Evaluation::Nil => {
-                write!(f, "Nil")
-            },
-            Evaluation::Integer(i) => {
-                write!(f, "{}", i)
-            },
-        }
-    }
+    Ok(interpreter::run_expression(expr)?)
 }
