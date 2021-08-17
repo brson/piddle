@@ -9,6 +9,7 @@ use nom::{
     character::complete::{
         alpha1,
         alphanumeric1,
+        multispace0,
         multispace1,
         one_of,
         char,
@@ -34,6 +35,7 @@ pub enum Expression {
     Require(Require),
     Literal(Literal),
     Struct(Struct),
+    Let(Let),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
@@ -104,6 +106,35 @@ pub struct StructField {
     type_: Type,
 }
 
+fn struct_(input: &str) -> IResult<&str, Struct> {
+    todo!()
+}
+
+#[derive(Debug)]
+pub struct Let {
+    name: String,
+    type_: Type,
+    expr: Box<Expression>,
+}
+
+fn let_(input: &str) -> IResult<&str, Let> {
+    let (input, _) = tag("let")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, type_) = type_(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, expr) = map(expr, Box::new)(input)?;
+
+    Ok((input, Let {
+        name, type_, expr,
+    }))
+}
+
+fn type_(input: &str) -> IResult<&str, Type> {
+    todo!()
+}
+
 #[derive(Debug)]
 pub enum Type {
     Name(String),
@@ -115,9 +146,6 @@ pub enum TypeIntrinsic {
     Int32,
 }
 
-fn struct_(input: &str) -> IResult<&str, Struct> {
-    todo!()
-}
 
 /* -------------- */
 

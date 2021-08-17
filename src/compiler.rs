@@ -41,5 +41,8 @@ pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
         Expression::Struct(_) => {
             todo!()
         },
+        Expression::Let(_) => {
+            todo!()
+        },
     }
 }
