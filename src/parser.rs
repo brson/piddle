@@ -65,10 +65,8 @@ fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, group) = map(identifier, ToString::to_string)(input)?;
-    println!("{}", group);
     let (input, _) = tag("/")(input)?;
     let (input, module) = map(identifier, ToString::to_string)(input)?;
-    println!("{}", module);
 
     Ok((input, Require {
         group, module,
