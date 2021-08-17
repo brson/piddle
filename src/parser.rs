@@ -132,20 +132,38 @@ fn let_(input: &str) -> IResult<&str, Let> {
     }))
 }
 
-fn type_(input: &str) -> IResult<&str, Type> {
-    todo!()
+#[derive(Debug)]
+pub enum Type {
+    Name(TypeName),
+    Intrinsic(TypeIntrinsic),
 }
 
 #[derive(Debug)]
-pub enum Type {
-    Name(String),
-    Intrinsic(TypeIntrinsic),
-}
+pub struct TypeName(String);
 
 #[derive(Debug)]
 pub enum TypeIntrinsic {
     Int32,
 }
+
+fn type_(input: &str) -> IResult<&str, Type> {
+    let (input, type_) = alt((
+        map(type_name, Type::Name),
+        map(type_intrinsic, Type::Intrinsic),
+    ))(input)?;
+
+    Ok((input, type_))
+}
+
+fn type_name(input: &str) -> IResult<&str, TypeName> {
+    let (input, name) = identifier(input)?;
+    Ok((input, TypeName(name.to_string())))
+}
+
+fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
+    todo!()
+}
+
 
 
 /* -------------- */
