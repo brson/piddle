@@ -22,6 +22,7 @@ use nom::{
     multi::{
         many0,
         many1,
+        separated_list0,
     },
     sequence::{
         pair,
@@ -108,6 +109,23 @@ pub struct StructField {
 }
 
 fn struct_(input: &str) -> IResult<&str, Struct> {
+    let (input, _) = tag("struct")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("{")(input)?;
+    let (input, _) = multispace0(input)?;
+    //let (input, fields) = separated_list0(, struct_field)(input)?;
+    let fields = todo!();
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("}")(input)?;
+
+    Ok((input, Struct {
+        name, fields
+    }))
+}
+
+fn struct_field(input: &str) -> IResult<&str, StructField> {
     todo!()
 }
 
