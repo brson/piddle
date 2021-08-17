@@ -33,6 +33,7 @@ pub enum Expression {
     Intrinsic(Intrinsic),
     Require(Require),
     Literal(Literal),
+    Struct(Struct),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
@@ -40,6 +41,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(intrinsic, Expression::Intrinsic),
         map(require, Expression::Require),
         map(literal, Expression::Literal),
+        map(struct_, Expression::Struct),
     ))(input)?;
     Ok((input, expr))
 }
@@ -79,7 +81,7 @@ fn require(input: &str) -> IResult<&str, Require> {
     }))
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Literal {
     Integer(String),
 }
@@ -90,6 +92,32 @@ fn literal(input: &str) -> IResult<&str, Literal> {
     Ok((input, lit))
 }
 
+#[derive(Debug)]
+pub struct Struct {
+    name: String,
+    fields: Vec<StructField>,
+}
+
+#[derive(Debug)]
+pub struct StructField {
+    name: String,
+    type_: Type,
+}
+
+#[derive(Debug)]
+pub enum Type {
+    Name(String),
+    Intrinsic(TypeIntrinsic),
+}
+
+#[derive(Debug)]
+pub enum TypeIntrinsic {
+    Int32,
+}
+
+fn struct_(input: &str) -> IResult<&str, Struct> {
+    todo!()
+}
 
 /* -------------- */
 

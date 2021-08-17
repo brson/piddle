@@ -38,5 +38,8 @@ pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
             let i = v.parse()?;
             Ok(Code::LiteralInteger(i))
         },
+        Expression::Struct(_) => {
+            todo!()
+        },
     }
 }

@@ -1,0 +1,7 @@
+struct Int32 {
+    inner: itype i32,
+}
+
+fn wrapping_add(a: Int32, b: Int32) -> Int32 {
+    intr i32_wrapping_add a.inner b.inner
+}
