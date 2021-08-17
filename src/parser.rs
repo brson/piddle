@@ -44,6 +44,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(require, Expression::Require),
         map(literal, Expression::Literal),
         map(struct_, Expression::Struct),
+        map(let_, Expression::Let),
     ))(input)?;
     Ok((input, expr))
 }
