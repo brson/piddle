@@ -6,7 +6,7 @@ pub enum Code {
     Nop,
     Clear,
     Require(Require),
-    LiteralInteger(i32),
+    LiteralInt32(i32),
 }
 
 #[derive(Debug, Clone)]
@@ -34,9 +34,9 @@ pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
                 group, module,
             }))
         },
-        Expression::Literal(parser::Literal::Integer(v)) => {
+        Expression::Literal(parser::Literal::Int32(v)) => {
             let i = v.parse()?;
-            Ok(Code::LiteralInteger(i))
+            Ok(Code::LiteralInt32(i))
         },
         Expression::Struct(_) => {
             todo!()

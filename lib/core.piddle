@@ -1,5 +1,5 @@
 struct Int32 {
-    inner: itype i32,
+    inner: itype int32,
 }
 
 fn wrapping_add(a: Int32, b: Int32) -> Int32 {

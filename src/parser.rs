@@ -86,12 +86,12 @@ fn require(input: &str) -> IResult<&str, Require> {
 
 #[derive(Debug)]
 pub enum Literal {
-    Integer(String),
+    Int32(String),
 }
 
 fn literal(input: &str) -> IResult<&str, Literal> {
     let (input, lit) = decimal(input)?;
-    let lit = Literal::Integer(lit.to_string());
+    let lit = Literal::Int32(lit.to_string());
     Ok((input, lit))
 }
 
@@ -141,7 +141,7 @@ pub enum Type {
 #[derive(Debug)]
 pub struct TypeName(String);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypeIntrinsic {
     Int32,
 }
@@ -161,7 +161,14 @@ fn type_name(input: &str) -> IResult<&str, TypeName> {
 }
 
 fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
-    todo!()
+    let (input, _) = tag("itype")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input , intrinsic) = alt((
+        value(TypeIntrinsic::Int32, tag("int32")),
+        value(TypeIntrinsic::Int32, tag("int32")),
+    ))(input)?;
+
+    Ok((input, intrinsic))
 }
 
 
