@@ -46,6 +46,7 @@ fn read_eval(readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
     let expr = read_expression(readline)?;
     eprintln!("expr: {:?}", expr);
     let expr = compile_expression(expr)?;
+    eprintln!("code: {:?}", expr);
     let expr = run_expression(expr)?;
 
     Ok(expr)
@@ -61,14 +62,28 @@ fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalEr
 }
 
 fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
-    todo!()
+    use parser::Intrinsic;
+
+    match expr {
+        Expression::Intrinsic(Intrinsic::Nop) => {
+            Ok(Code::Nop)
+        }
+    }
 }
 
 fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
-    todo!()
+    match expr {
+        Code::Nop => Ok(Evaluation::None),
+    }
 }
 
 #[derive(Debug)]
-struct Code;
+enum Code {
+    Nop,
+}
+
+
 #[derive(Debug)]
-struct Evaluation;
+enum Evaluation {
+    None,
+}
