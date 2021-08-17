@@ -69,21 +69,33 @@ fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
     match expr {
         Expression::Intrinsic(Intrinsic::Nop) => {
             Ok(Code::Nop)
-        }
+        },
+        Expression::Require(parser::Require { group, module }) => {
+            Ok(Code::Require(Require {
+                group, module,
+            }))
+        },
     }
 }
 
 fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
     match expr {
         Code::Nop => Ok(Evaluation::None),
+        Code::Require(_) => todo!(),
     }
 }
 
 #[derive(Debug)]
 enum Code {
     Nop,
+    Require(Require),
 }
 
+#[derive(Debug, Clone)]
+pub struct Require {
+    pub group: String,
+    pub module: String,
+}
 
 #[derive(Debug)]
 enum Evaluation {

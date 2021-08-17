@@ -1,27 +1,42 @@
 use nom::{
     IResult,
+    branch::{
+        alt,
+    },
     bytes::streaming::{
         tag,
     },
-    character::streaming::multispace1,
-    branch::alt,
-    combinator::value,
+    character::streaming::{
+        alpha1,
+        alphanumeric1,
+        multispace1,
+    },
+    combinator::{
+        value,
+        recognize,
+    },
+    multi::{
+        many0,
+    },
+    sequence::{
+        pair,
+    },
 };
 
 #[derive(Debug)]
 pub enum Expression {
     Intrinsic(Intrinsic),
-}
-
-#[derive(Debug)]
-#[derive(Clone)]
-pub enum Intrinsic {
-    Nop,
+    Require(Require),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (input, intrinsic) = intrinsic(input)?;
     Ok((input, Expression::Intrinsic(intrinsic)))
+}
+
+#[derive(Debug, Clone)]
+pub enum Intrinsic {
+    Nop,
 }
 
 fn intrinsic(input: &str) -> IResult<&str, Intrinsic> {
@@ -33,4 +48,28 @@ fn intrinsic(input: &str) -> IResult<&str, Intrinsic> {
     ))(input)?;
 
     Ok((input, intrinsic))
+}
+
+#[derive(Debug, Clone)]
+pub struct Require {
+    pub group: String,
+    pub module: String,
+}
+
+fn require(input: &str) -> IResult<&str, Require> {
+    let (input, _) = tag("require")(input)?;
+    let (input, _) = multispace1(input)?;
+    todo!()
+}
+
+
+/* -------------- */
+
+pub fn identifier(input: &str) -> IResult<&str, &str> {
+    recognize(
+        pair(
+            alt((alpha1, tag("_"))),
+            many0(alt((alphanumeric1, tag("_"))))
+        )
+    )(input)
 }
