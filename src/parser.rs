@@ -3,6 +3,7 @@ use nom::{
     bytes::streaming::{
         tag,
     },
+    character::streaming::multispace1,
     branch::alt,
     combinator::value,
 };
@@ -25,6 +26,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
 
 fn intrinsic(input: &str) -> IResult<&str, Intrinsic> {
     let (input, _) = tag("intr")(input)?;
+    let (input, _) = multispace1(input)?;
     let (input , intrinsic) = alt((
         value(Intrinsic::Nop, tag("nop")),
         value(Intrinsic::Nop, tag("nop2")),
