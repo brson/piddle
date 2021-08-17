@@ -14,7 +14,7 @@ fn main() {
     loop {
         match read_eval(&mut readline) {
             Ok(expr) => {
-                eprintln!("ok: {:?}", expr);
+                eprintln!("ok: {}", expr);
             },
             Err(ReadEvalError::Readline(err @ ReadlineError::Eof)) |
             Err(ReadEvalError::Readline(err @ ReadlineError::Interrupted)) => {
@@ -41,13 +41,13 @@ enum ReadEvalError {
     Readline(#[from] rustyline::error::ReadlineError),
     #[error("parsing input")]
     Nom(#[from] nom::Err<nom::error::Error<String>>),
+    #[error("parsing integer")]
+    ParseInt(#[from] std::num::ParseIntError),
 }
 
 fn read_eval(readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
     let expr = read_expression(readline)?;
-    eprintln!("expr: {:?}", expr);
     let expr = compile_expression(expr)?;
-    eprintln!("code: {:?}", expr);
     let expr = run_expression(expr)?;
 
     Ok(expr)
@@ -79,6 +79,10 @@ fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
                 group, module,
             }))
         },
+        Expression::Literal(parser::Literal::Integer(v)) => {
+            let i = v.parse()?;
+            Ok(Code::LiteralInteger(i))
+        },
     }
 }
 
@@ -87,6 +91,7 @@ fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),
         Code::Require(_) => todo!(),
+        Code::LiteralInteger(i) => Ok(Evaluation::Integer(i)),
     }
 }
 
@@ -95,6 +100,7 @@ enum Code {
     Nop,
     Clear,
     Require(Require),
+    LiteralInteger(i32),
 }
 
 #[derive(Debug, Clone)]
@@ -106,4 +112,18 @@ pub struct Require {
 #[derive(Debug)]
 enum Evaluation {
     Nil,
+    Integer(i32),
+}
+
+impl std::fmt::Display for Evaluation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Evaluation::Nil => {
+                write!(f, "Nil")
+            },
+            Evaluation::Integer(i) => {
+                write!(f, "{}", i)
+            },
+        }
+    }
 }

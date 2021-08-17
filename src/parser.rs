@@ -10,6 +10,8 @@ use nom::{
         alpha1,
         alphanumeric1,
         multispace1,
+        one_of,
+        char,
     },
     combinator::{
         map,
@@ -18,9 +20,11 @@ use nom::{
     },
     multi::{
         many0,
+        many1,
     },
     sequence::{
         pair,
+        terminated,
     },
 };
 
@@ -28,12 +32,14 @@ use nom::{
 pub enum Expression {
     Intrinsic(Intrinsic),
     Require(Require),
+    Literal(Literal),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (_, expr) = alt((
         map(intrinsic, Expression::Intrinsic),
         map(require, Expression::Require),
+        map(literal, Expression::Literal),
     ))(input)?;
     Ok((input, expr))
 }
@@ -73,6 +79,17 @@ fn require(input: &str) -> IResult<&str, Require> {
     }))
 }
 
+#[derive(Debug, Clone)]
+pub enum Literal {
+    Integer(String),
+}
+
+fn literal(input: &str) -> IResult<&str, Literal> {
+    let (input, lit) = decimal(input)?;
+    let lit = Literal::Integer(lit.to_string());
+    Ok((input, lit))
+}
+
 
 /* -------------- */
 
@@ -81,6 +98,14 @@ pub fn identifier(input: &str) -> IResult<&str, &str> {
         pair(
             alt((alpha1, tag("_"))),
             many0(alt((alphanumeric1, tag("_"))))
+        )
+    )(input)
+}
+
+fn decimal(input: &str) -> IResult<&str, &str> {
+    recognize(
+        many1(
+            terminated(one_of("0123456789"), many0(char('_')))
         )
     )(input)
 }
