@@ -12,6 +12,7 @@ use nom::{
         multispace1,
     },
     combinator::{
+        map,
         value,
         recognize,
     },
@@ -59,7 +60,13 @@ pub struct Require {
 fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
-    todo!()
+    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = tag("/")(input)?;
+    let (input, module) = map(identifier, ToString::to_string)(input)?;
+
+    Ok((input, Require {
+        group, module,
+    }))
 }
 
 
