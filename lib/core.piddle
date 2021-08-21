@@ -3,5 +3,9 @@ struct Int32 {
 }
 
 fn wrapping_add(a: Int32, b: Int32) -> Int32 {
-    intr i32_wrapping_add a.inner b.inner
+    intr_wrapping_add(a.inner, b.inner)
+}
+
+fn intr_wrapping_add(a: itype int32, b: itype int32) -> itype int32 {
+    intr i32_wrapping_add a b
 }
