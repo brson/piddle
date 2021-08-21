@@ -115,8 +115,7 @@ fn struct_(input: &str) -> IResult<&str, Struct> {
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    //let (input, fields) = separated_list0(, struct_field)(input)?;
-    let fields = todo!();
+    let (input, fields) = separated_list0(tag(","), struct_field)(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
