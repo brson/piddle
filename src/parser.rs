@@ -125,7 +125,14 @@ fn struct_(input: &str) -> IResult<&str, Struct> {
 }
 
 fn struct_field(input: &str) -> IResult<&str, StructField> {
-    todo!()
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = tag(":")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, type_) = type_(input)?;
+
+    Ok((input, StructField {
+        name, type_,
+    }))
 }
 
 #[derive(Debug)]

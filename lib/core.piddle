@@ -1,11 +1,31 @@
-struct Int32 {
-    inner: itype int32,
+module
+
+struct Nil
+    inner: itype Nil
+
+struct Int32
+    inner: itype int32
+
+fn wrapping_add (a: Int32, b: Int32) -> Int32 {
+    set a_inner a.inner
+    set b_inner b.inner
+    call intr_wrapping_add (a_inner, b_inner)
 }
 
-fn wrapping_add(a: Int32, b: Int32) -> Int32 {
-    intr_wrapping_add(a.inner, b.inner)
+fn wrapping_add_expr (a: Int32, b: Int32) -> Int32 {
+    call intr_wrapping_add (a.inner, b.inner)
 }
 
-fn intr_wrapping_add(a: itype int32, b: itype int32) -> itype int32 {
-    intr i32_wrapping_add a b
+fn wrapping_add_annotated (a: Int32, b: Int32): (Int32, Int32) -> Int32 {
+    set a_inner: itype int32 a.inner: itype int32
+    set b_inner: itype int32 b.inner: itype int32
+    call intr_wrapping_add (a_inner: itype int32 b_inner: itype int32): (itype int32, itype int32)
 }
+
+fn wrapping_add_tuple args: (Int32, Int32) -> Int32 {
+    set (a, b) args
+    ...
+}
+
+fn intr_wrapping_add (a itype int32, b itype int32) -> itype int32
+    intr i32_wrapping_add (a b)
