@@ -33,19 +33,19 @@ use nom::{
 #[derive(Debug)]
 pub enum Expression {
     IntrinsicCall(IntrinsicCall),
-    Require(Require),
     Literal(Literal),
-    Struct(Struct),
     Let(Let),
+    Struct(Struct),
+    Require(Require),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (_, expr) = alt((
         map(intrinsic_call, Expression::IntrinsicCall),
-        map(require, Expression::Require),
         map(literal, Expression::Literal),
-        map(struct_, Expression::Struct),
         map(let_, Expression::Let),
+        map(struct_, Expression::Struct),
+        map(require, Expression::Require),
     ))(input)?;
     Ok((input, expr))
 }
@@ -67,24 +67,6 @@ fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
     Ok((input, intrinsic))
 }
 
-#[derive(Debug, Clone)]
-pub struct Require {
-    pub group: String,
-    pub module: String,
-}
-
-fn require(input: &str) -> IResult<&str, Require> {
-    let (input, _) = tag("require")(input)?;
-    let (input, _) = multispace1(input)?;
-    let (input, group) = map(identifier, ToString::to_string)(input)?;
-    let (input, _) = tag("/")(input)?;
-    let (input, module) = map(identifier, ToString::to_string)(input)?;
-
-    Ok((input, Require {
-        group, module,
-    }))
-}
-
 #[derive(Debug)]
 pub enum Literal {
     Int32(String),
@@ -94,6 +76,27 @@ fn literal(input: &str) -> IResult<&str, Literal> {
     let (input, lit) = decimal(input)?;
     let lit = Literal::Int32(lit.to_string());
     Ok((input, lit))
+}
+
+#[derive(Debug)]
+pub struct Let {
+    name: String,
+    type_: Type,
+    expr: Box<Expression>,
+}
+
+fn let_(input: &str) -> IResult<&str, Let> {
+    let (input, _) = tag("let")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, type_) = type_(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, expr) = map(expr, Box::new)(input)?;
+
+    Ok((input, Let {
+        name, type_, expr,
+    }))
 }
 
 #[derive(Debug)]
@@ -136,27 +139,6 @@ fn struct_field(input: &str) -> IResult<&str, StructField> {
 }
 
 #[derive(Debug)]
-pub struct Let {
-    name: String,
-    type_: Type,
-    expr: Box<Expression>,
-}
-
-fn let_(input: &str) -> IResult<&str, Let> {
-    let (input, _) = tag("let")(input)?;
-    let (input, _) = multispace1(input)?;
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
-    let (input, _) = multispace0(input)?;
-    let (input, type_) = type_(input)?;
-    let (input, _) = multispace0(input)?;
-    let (input, expr) = map(expr, Box::new)(input)?;
-
-    Ok((input, Let {
-        name, type_, expr,
-    }))
-}
-
-#[derive(Debug)]
 pub enum Type {
     Name(TypeName),
     Intrinsic(TypeIntrinsic),
@@ -193,6 +175,24 @@ fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
     ))(input)?;
 
     Ok((input, intrinsic))
+}
+
+#[derive(Debug, Clone)]
+pub struct Require {
+    pub group: String,
+    pub module: String,
+}
+
+fn require(input: &str) -> IResult<&str, Require> {
+    let (input, _) = tag("require")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = tag("/")(input)?;
+    let (input, module) = map(identifier, ToString::to_string)(input)?;
+
+    Ok((input, Require {
+        group, module,
+    }))
 }
 
 
