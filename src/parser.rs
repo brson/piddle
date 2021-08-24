@@ -33,7 +33,7 @@ use nom::{
 #[derive(Debug)]
 pub enum Expression {
     IntrinsicCall(IntrinsicCall),
-    Literal(Literal),
+    IntrinsicLiteral(IntrinsicLiteral),
     Let(Let),
     Struct(Struct),
     Require(Require),
@@ -42,7 +42,7 @@ pub enum Expression {
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (_, expr) = alt((
         map(intrinsic_call, Expression::IntrinsicCall),
-        map(literal, Expression::Literal),
+        map(intrinsic_literal, Expression::IntrinsicLiteral),
         map(let_, Expression::Let),
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
@@ -68,13 +68,13 @@ fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
 }
 
 #[derive(Debug)]
-pub enum Literal {
+pub enum IntrinsicLiteral {
     Int32(String),
 }
 
-fn literal(input: &str) -> IResult<&str, Literal> {
+fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
     let (input, lit) = decimal(input)?;
-    let lit = Literal::Int32(lit.to_string());
+    let lit = IntrinsicLiteral::Int32(lit.to_string());
     Ok((input, lit))
 }
 

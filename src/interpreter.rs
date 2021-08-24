@@ -10,14 +10,14 @@ pub fn run_expression(expr: Code) -> Result<Evaluation, RunError> {
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),
         Code::Require(_) => todo!(),
-        Code::LiteralInt32(i) => Ok(Evaluation::Int32(i)),
+        Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
     }
 }
 
 #[derive(Debug)]
 pub enum Evaluation {
     Nil,
-    Int32(i32),
+    IntrinsicInt32(i32),
 }
 
 impl std::fmt::Display for Evaluation {
@@ -26,7 +26,7 @@ impl std::fmt::Display for Evaluation {
             Evaluation::Nil => {
                 write!(f, "Nil")
             },
-            Evaluation::Int32(i) => {
+            Evaluation::IntrinsicInt32(i) => {
                 write!(f, "{}", i)
             },
         }
