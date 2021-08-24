@@ -23,10 +23,10 @@ pub enum CompileError {
 
 pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
     match expr {
-        Expression::Intrinsic(parser::Intrinsic::Nop) => {
+        Expression::IntrinsicCall(parser::IntrinsicCall::Nop) => {
             Ok(Code::Nop)
         },
-        Expression::Intrinsic(parser::Intrinsic::Clear) => {
+        Expression::IntrinsicCall(parser::IntrinsicCall::Clear) => {
             Ok(Code::Clear)
         }
         Expression::Require(parser::Require { group, module }) => {

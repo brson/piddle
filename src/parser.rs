@@ -32,7 +32,7 @@ use nom::{
 
 #[derive(Debug)]
 pub enum Expression {
-    Intrinsic(Intrinsic),
+    IntrinsicCall(IntrinsicCall),
     Require(Require),
     Literal(Literal),
     Struct(Struct),
@@ -41,7 +41,7 @@ pub enum Expression {
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (_, expr) = alt((
-        map(intrinsic, Expression::Intrinsic),
+        map(intrinsic_call, Expression::IntrinsicCall),
         map(require, Expression::Require),
         map(literal, Expression::Literal),
         map(struct_, Expression::Struct),
@@ -51,17 +51,17 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
 }
 
 #[derive(Debug, Clone)]
-pub enum Intrinsic {
+pub enum IntrinsicCall {
     Nop,
     Clear,
 }
 
-fn intrinsic(input: &str) -> IResult<&str, Intrinsic> {
-    let (input, _) = tag("intr")(input)?;
+fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
+    let (input, _) = tag("icall")(input)?;
     let (input, _) = multispace1(input)?;
     let (input , intrinsic) = alt((
-        value(Intrinsic::Nop, tag("nop")),
-        value(Intrinsic::Clear, tag("clear")),
+        value(IntrinsicCall::Nop, tag("nop")),
+        value(IntrinsicCall::Clear, tag("clear")),
     ))(input)?;
 
     Ok((input, intrinsic))
