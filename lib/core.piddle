@@ -37,5 +37,5 @@ fn wrapping_add_tuple args: (Int32, Int32) -> Int32 {
 }
 
 fn icall_wrapping_add (a itype int32, b itype int32) -> itype int32 {
-    icall i32_wrapping_add (a b)
+    icall int32_wrapping_add (a b)
 }
