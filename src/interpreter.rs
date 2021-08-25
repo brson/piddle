@@ -1,18 +1,27 @@
 use crate::compiler::Code;
 
+use std::collections::HashMap;
+
+#[derive(Default)]
+pub struct Environment {
+    values: HashMap<String, Evaluation>,
+}
+
 #[derive(thiserror::Error, Debug)]
 #[error("running")]
 pub enum RunError {
 }
 
-pub fn run_expression(expr: Code) -> Result<Evaluation, RunError> {
+pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, RunError> {
     match expr {
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),
         Code::Require(_) => todo!(),
         Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
         Code::Set(name, code) => {
-            todo!()
+            let eval = run_expression(env, *code)?;
+            env.values.insert(name, eval);
+            Ok(Evaluation::Nil)
         }
     }
 }

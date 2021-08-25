@@ -9,13 +9,14 @@ mod interpreter;
 
 use parser::Expression;
 use compiler::Code;
-use interpreter::Evaluation;
+use interpreter::{Environment, Evaluation};
 
 fn main() {
+    let mut env = Environment::default();
     let mut readline = Editor::<()>::new();
 
     loop {
-        match read_eval(&mut readline) {
+        match read_eval(&mut env, &mut readline) {
             Ok(expr) => {
                 eprintln!("ok: {}", expr);
             },
@@ -50,10 +51,10 @@ enum ReadEvalError {
     Run(#[from] interpreter::RunError),
 }
 
-fn read_eval(readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
+fn read_eval(env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
     let expr = read_expression(readline)?;
     let expr = compile_expression(expr)?;
-    let expr = run_expression(expr)?;
+    let expr = run_expression(env, expr)?;
 
     Ok(expr)
 }
@@ -73,6 +74,6 @@ fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
     Ok(compiler::compile_expression(expr)?)
 }
 
-fn run_expression(expr: Code) -> Result<Evaluation, ReadEvalError> {
-    Ok(interpreter::run_expression(expr)?)
+fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
+    Ok(interpreter::run_expression(env, expr)?)
 }
