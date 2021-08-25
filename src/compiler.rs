@@ -7,6 +7,7 @@ pub enum Code {
     Clear,
     Require(Require),
     IntrinsicLiteralInt32(i32),
+    Set(String, Box<Code>),
 }
 
 #[derive(Debug, Clone)]
@@ -41,8 +42,9 @@ pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
         Expression::Struct(_) => {
             todo!()
         },
-        Expression::Set(_) => {
-            todo!()
+        Expression::Set(parser::Set { name, type_, expr }) => {
+            let expr = compile_expression(*expr)?;
+            Ok(Code::Set(name, Box::new(expr)))
         },
     }
 }

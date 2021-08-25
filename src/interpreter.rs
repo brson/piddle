@@ -11,6 +11,9 @@ pub fn run_expression(expr: Code) -> Result<Evaluation, RunError> {
         Code::Clear => Ok(Evaluation::Nil),
         Code::Require(_) => todo!(),
         Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
+        Code::Set(name, code) => {
+            todo!()
+        }
     }
 }
 

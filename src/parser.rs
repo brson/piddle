@@ -82,9 +82,9 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
 
 #[derive(Debug)]
 pub struct Set {
-    name: String,
-    type_: Type,
-    expr: Box<Expression>,
+    pub name: String,
+    pub type_: Type,
+    pub expr: Box<Expression>,
 }
 
 fn set(input: &str) -> IResult<&str, Set> {
