@@ -34,7 +34,7 @@ use nom::{
 pub enum Expression {
     IntrinsicCall(IntrinsicCall),
     IntrinsicLiteral(IntrinsicLiteral),
-    Let(Let),
+    Set(Set),
     Struct(Struct),
     Require(Require),
 }
@@ -43,7 +43,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (_, expr) = alt((
         map(intrinsic_call, Expression::IntrinsicCall),
         map(intrinsic_literal, Expression::IntrinsicLiteral),
-        map(let_, Expression::Let),
+        map(set, Expression::Set),
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
     ))(input)?;
@@ -81,22 +81,22 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
 }
 
 #[derive(Debug)]
-pub struct Let {
+pub struct Set {
     name: String,
     type_: Type,
     expr: Box<Expression>,
 }
 
-fn let_(input: &str) -> IResult<&str, Let> {
-    let (input, _) = tag("let")(input)?;
+fn set(input: &str) -> IResult<&str, Set> {
+    let (input, _) = tag("set")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = map(identifier, ToString::to_string)(input)?;
-    let (input, _) = multispace0(input)?;
+    let (input, _) = multispace1(input)?;
     let (input, type_) = type_(input)?;
-    let (input, _) = multispace0(input)?;
+    let (input, _) = multispace1(input)?;
     let (input, expr) = map(expr, Box::new)(input)?;
 
-    Ok((input, Let {
+    Ok((input, Set {
         name, type_, expr,
     }))
 }
@@ -156,16 +156,11 @@ pub enum TypeIntrinsic {
 
 fn type_(input: &str) -> IResult<&str, Type> {
     let (input, type_) = alt((
-        map(type_name, Type::Name),
         map(type_intrinsic, Type::Intrinsic),
+        map(type_name, Type::Name),
     ))(input)?;
 
     Ok((input, type_))
-}
-
-fn type_name(input: &str) -> IResult<&str, TypeName> {
-    let (input, name) = identifier(input)?;
-    Ok((input, TypeName(name.to_string())))
 }
 
 fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
@@ -177,6 +172,11 @@ fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
     ))(input)?;
 
     Ok((input, intrinsic))
+}
+
+fn type_name(input: &str) -> IResult<&str, TypeName> {
+    let (input, name) = identifier(input)?;
+    Ok((input, TypeName(name.to_string())))
 }
 
 #[derive(Debug, Clone)]
