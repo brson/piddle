@@ -2,14 +2,20 @@ use crate::compiler::Code;
 
 use std::collections::HashMap;
 
+#[derive(thiserror::Error, Debug)]
+#[error("running")]
+pub enum RunError {
+}
+
 #[derive(Default)]
 pub struct Environment {
     values: HashMap<String, Evaluation>,
 }
 
-#[derive(thiserror::Error, Debug)]
-#[error("running")]
-pub enum RunError {
+#[derive(Debug)]
+pub enum Evaluation {
+    Nil,
+    IntrinsicInt32(i32),
 }
 
 pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, RunError> {
@@ -23,13 +29,11 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
             env.values.insert(name, eval);
             Ok(Evaluation::Nil)
         }
+        Code::Read(name) => {
+            let eval = env.values.get(&name);
+            todo!()
+        }
     }
-}
-
-#[derive(Debug)]
-pub enum Evaluation {
-    Nil,
-    IntrinsicInt32(i32),
 }
 
 impl std::fmt::Display for Evaluation {

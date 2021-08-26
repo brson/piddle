@@ -35,6 +35,7 @@ pub enum Expression {
     IntrinsicCall(IntrinsicCall),
     IntrinsicLiteral(IntrinsicLiteral),
     Set(Set),
+    Name(String),
     Struct(Struct),
     Require(Require),
 }
@@ -46,6 +47,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(set, Expression::Set),
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
+        map(name, Expression::Name),
     ))(input)?;
     Ok((input, expr))
 }
@@ -99,6 +101,10 @@ fn set(input: &str) -> IResult<&str, Set> {
     Ok((input, Set {
         name, type_, expr,
     }))
+}
+
+fn name(input: &str) -> IResult<&str, String> {
+    map(identifier, ToString::to_string)(input)
 }
 
 #[derive(Debug)]
