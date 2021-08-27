@@ -31,6 +31,32 @@ use nom::{
 };
 
 #[derive(Debug)]
+pub struct Module {
+    decls: Vec<Declaration>,
+}
+
+pub fn module(input: &str) -> IResult<&str, Module> {
+    let(input, decls) = many0(declaration)(input)?;
+    Ok((input, Module {
+        decls,
+    }))
+}
+
+pub fn declaration(input: &str) -> IResult<&str, Declaration> {
+    let (input, decl) = alt((
+        map(struct_, Declaration::Struct),
+        map(require, Declaration::Require),
+    ))(input)?;
+    Ok((input, decl))
+}
+
+#[derive(Debug)]
+pub enum Declaration {
+    Struct(Struct),
+    Require(Require),
+}
+
+#[derive(Debug)]
 pub enum Expression {
     IntrinsicCall(IntrinsicCall),
     IntrinsicLiteral(IntrinsicLiteral),
@@ -41,7 +67,7 @@ pub enum Expression {
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
-    let (_, expr) = alt((
+    let (input, expr) = alt((
         map(intrinsic_call, Expression::IntrinsicCall),
         map(intrinsic_literal, Expression::IntrinsicLiteral),
         map(set, Expression::Set),
