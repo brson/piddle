@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use anyhow::Result;
 use std::error::Error;
 use rustyline::Editor;
@@ -8,15 +10,16 @@ mod compiler;
 mod interpreter;
 
 use parser::Expression;
-use compiler::Code;
+use compiler::{Compiler, Code};
 use interpreter::{Environment, Evaluation};
 
 fn main() {
+    let mut compiler = Compiler::new();
     let mut env = Environment::default();
     let mut readline = Editor::<()>::new();
 
     loop {
-        match read_eval(&mut env, &mut readline) {
+        match read_eval(&mut compiler, &mut env, &mut readline) {
             Ok(expr) => {
                 eprintln!("ok: {}", expr);
             },
@@ -51,9 +54,9 @@ enum ReadEvalError {
     Run(#[from] interpreter::RunError),
 }
 
-fn read_eval(env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
+fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
     let expr = read_expression(readline)?;
-    let expr = compile_expression(expr)?;
+    let expr = compile_expression(compiler, expr)?;
     let expr = run_expression(env, expr)?;
 
     Ok(expr)
@@ -70,8 +73,8 @@ fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalEr
     Ok(expr)
 }
 
-fn compile_expression(expr: Expression) -> Result<Code, ReadEvalError> {
-    Ok(compiler::compile_expression(expr)?)
+fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, ReadEvalError> {
+    Ok(compiler::compile_expression(compiler, expr)?)
 }
 
 fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {

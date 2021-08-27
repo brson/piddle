@@ -1,6 +1,16 @@
 use crate::parser;
 use crate::parser::Expression;
 
+pub struct Compiler {
+}
+
+impl Compiler {
+    pub fn new() -> Compiler {
+        Compiler {
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Code {
     Nop,
@@ -23,7 +33,7 @@ pub enum CompileError {
     ParseInt(#[from] std::num::ParseIntError),
 }
 
-pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
+pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, CompileError> {
     match expr {
         Expression::IntrinsicCall(parser::IntrinsicCall::Nop) => {
             Ok(Code::Nop)
@@ -44,7 +54,7 @@ pub fn compile_expression(expr: Expression) -> Result<Code, CompileError> {
             todo!()
         },
         Expression::Set(parser::Set { name, type_, expr }) => {
-            let expr = compile_expression(*expr)?;
+            let expr = compile_expression(compiler, *expr)?;
             Ok(Code::Set(name, Box::new(expr)))
         },
         Expression::Name(name) => {
