@@ -12,7 +12,7 @@ pub struct Environment {
     values: HashMap<String, Evaluation>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Evaluation {
     Nil,
     IntrinsicInt32(i32),
@@ -30,8 +30,9 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
             Ok(Evaluation::Nil)
         }
         Code::Read(name) => {
-            let eval = env.values.get(&name);
-            todo!()
+            let eval = env.values.get(&name).expect("read");
+            let eval = eval.clone();
+            Ok(eval)
         }
     }
 }
