@@ -236,8 +236,7 @@ pub struct Function {
     name: String,
     args: Vec<Argument>,
     return_type: Type,
-    statements: Vec<Expression>,
-    tail_expr: Option<Box<Expression>>,
+    exprs: Vec<Expression>,
 }
 
 #[derive(Debug)]
@@ -247,7 +246,28 @@ pub struct Argument {
 fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = tag("fn")(input)?;
     let (input, _) = multispace1(input)?;
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = tag("(")(input)?;
+    let (input, args) = separated_list0(tag(","), argument)(input)?;
+    let (input, _) = tag(")")(input)?;
 
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("->")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, return_type) = type_(input)?;
+
+    let (input, _) = tag("{")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, exprs) = separated_list0(tag(","), expr)(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("}")(input)?;
+
+    Ok((input, Function {
+        name, args, return_type, exprs,
+    }))
+}
+
+fn argument(input: &str) -> IResult<&str, Argument> {
     todo!()
 }
 
