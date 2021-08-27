@@ -164,11 +164,7 @@ fn struct_(input: &str) -> IResult<&str, Struct> {
 }
 
 fn struct_field(input: &str) -> IResult<&str, StructField> {
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
-    let (input, _) = tag(":")(input)?;
-    let (input, _) = multispace0(input)?;
-    let (input, type_) = type_(input)?;
-
+    let (input, (name, type_)) = name_type(input)?;
     Ok((input, StructField {
         name, type_,
     }))
@@ -241,6 +237,8 @@ pub struct Function {
 
 #[derive(Debug)]
 pub struct Argument {
+    name: String,
+    type_: Type,
 }
 
 fn function(input: &str) -> IResult<&str, Function> {
@@ -268,7 +266,19 @@ fn function(input: &str) -> IResult<&str, Function> {
 }
 
 fn argument(input: &str) -> IResult<&str, Argument> {
-    todo!()
+    let (input, (name, type_)) = name_type(input)?;
+    Ok((input, Argument {
+        name, type_,
+    }))
+}
+
+fn name_type(input: &str) -> IResult<&str, (String, Type)> {
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = tag(":")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, type_) = type_(input)?;
+
+    Ok((input, (name, type_)))
 }
 
 
