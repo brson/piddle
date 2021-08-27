@@ -254,6 +254,7 @@ fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = multispace0(input)?;
     let (input, return_type) = type_(input)?;
 
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
     let (input, exprs) = separated_list0(tag(","), expr)(input)?;

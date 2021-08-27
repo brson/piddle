@@ -29,7 +29,11 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
             Ok(Evaluation::Nil)
         }
         Code::Read(name) => {
-            let eval = env.values.get(&name).expect("read");
+            let eval = if let Some(eval) = env.values.get(&name) {
+                eval
+            } else {
+                panic!("reading empty name {}", name);
+            };
             let eval = eval.clone();
             Ok(eval)
         }
