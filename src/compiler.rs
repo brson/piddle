@@ -51,6 +51,9 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
         Expression::Name(name) => {
             Ok(Code::Read(name))
         },
+        Expression::Function(_) => {
+            todo!()
+        },
     }
 }
 

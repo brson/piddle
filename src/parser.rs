@@ -64,6 +64,7 @@ pub enum Expression {
     Name(String),
     Struct(Struct),
     Require(Require),
+    Function(Function),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
@@ -73,6 +74,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(set, Expression::Set),
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
+        map(function, Expression::Function),
         map(name, Expression::Name),
     ))(input)?;
     Ok((input, expr))
@@ -229,6 +231,25 @@ fn require(input: &str) -> IResult<&str, Require> {
     }))
 }
 
+#[derive(Debug)]
+pub struct Function {
+    name: String,
+    args: Vec<Argument>,
+    return_type: Type,
+    statements: Vec<Expression>,
+    tail_expr: Option<Box<Expression>>,
+}
+
+#[derive(Debug)]
+pub struct Argument {
+}
+
+fn function(input: &str) -> IResult<&str, Function> {
+    let (input, _) = tag("fn")(input)?;
+    let (input, _) = multispace1(input)?;
+
+    todo!()
+}
 
 
 /* -------------- */
