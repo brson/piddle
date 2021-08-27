@@ -27,7 +27,7 @@ pub fn load(compiler: &mut Compiler, group: &str, module: &str) -> Result<(), Er
     compiler.add_module(group, module, ast);
 
     for decl in decls {
-        todo!()
+        // todo
     }
 
     Ok(())
