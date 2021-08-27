@@ -9,6 +9,8 @@ mod parser;
 mod compiler;
 mod interpreter;
 
+mod require;
+
 use parser::Expression;
 use compiler::{Compiler, Code};
 use interpreter::{Environment, Evaluation};

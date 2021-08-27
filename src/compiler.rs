@@ -1,5 +1,6 @@
 use crate::parser;
 use crate::parser::Expression;
+use crate::require;
 
 pub struct Compiler {
 }
@@ -15,7 +16,6 @@ impl Compiler {
 pub enum Code {
     Nop,
     Clear,
-    Require(Require),
     IntrinsicLiteralInt32(i32),
     Set(String, Box<Code>),
     Read(String),
@@ -31,6 +31,8 @@ pub struct Require {
 pub enum CompileError {
     #[error("parsing integer")]
     ParseInt(#[from] std::num::ParseIntError),
+    #[error("loading module")]
+    Require(#[from] require::Error),
 }
 
 pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, CompileError> {
@@ -42,9 +44,8 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             Ok(Code::Clear)
         }
         Expression::Require(parser::Require { group, module }) => {
-            Ok(Code::Require(Require {
-                group, module,
-            }))
+            require::load(compiler, &group, &module)?;
+            Ok(Code::Nop)
         },
         Expression::IntrinsicLiteral(parser::IntrinsicLiteral::Int32(v)) => {
             let i = v.parse()?;
