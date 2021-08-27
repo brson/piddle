@@ -32,7 +32,7 @@ use nom::{
 
 #[derive(Debug)]
 pub struct Module {
-    decls: Vec<Declaration>,
+    pub decls: Vec<Declaration>,
 }
 
 pub fn module(input: &str) -> IResult<&str, Module> {
@@ -50,7 +50,7 @@ pub fn declaration(input: &str) -> IResult<&str, Declaration> {
     Ok((input, decl))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Declaration {
     Struct(Struct),
     Require(Require),
@@ -133,13 +133,13 @@ fn name(input: &str) -> IResult<&str, String> {
     map(identifier, ToString::to_string)(input)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     name: String,
     fields: Vec<StructField>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StructField {
     name: String,
     type_: Type,
@@ -172,13 +172,13 @@ fn struct_field(input: &str) -> IResult<&str, StructField> {
     }))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Name(TypeName),
     Intrinsic(TypeIntrinsic),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeName(String);
 
 #[derive(Debug, Clone)]

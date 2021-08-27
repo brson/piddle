@@ -2,16 +2,6 @@ use crate::parser;
 use crate::parser::Expression;
 use crate::require;
 
-pub struct Compiler {
-}
-
-impl Compiler {
-    pub fn new() -> Compiler {
-        Compiler {
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum Code {
     Nop,
@@ -63,3 +53,23 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
         },
     }
 }
+
+pub struct Compiler {
+}
+
+impl Compiler {
+    pub fn new() -> Compiler {
+        Compiler {
+        }
+    }
+
+    pub fn have_module(&self, group: &str, module: &str) -> bool {
+        todo!()
+    }
+
+    pub fn add_module(&mut self, group: &str, module: &str, ast: parser::Module) {
+        assert!(!self.have_module(group, module));
+        todo!()
+    }
+}
+
