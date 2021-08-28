@@ -54,16 +54,17 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             Ok(Code::Read(name))
         },
         Expression::Function(function) => {
-            assert!(!compiler.fn_asts.contains_key(&function.name));
-            compiler.fn_asts.insert(function.name.clone(), function);
+            let name = function.name.clone();
+            assert!(!compiler.fn_asts.contains_key(&name));
+            compiler.fn_asts.insert(name.clone(), function);
             // todo remove me and compile lazily
-            compile_function(compiler, function)?;
+            compile_function(compiler, &name)?;
             Ok(Code::Nop)
         },
     }
 }
 
-fn compile_function(compiler: &mut Compiler, function: parser::Function) -> Result<(), CompileError> {
+fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileError> {
     todo!()
 }
 

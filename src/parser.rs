@@ -154,7 +154,7 @@ fn struct_(input: &str) -> IResult<&str, Struct> {
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, fields) = separated_list0(tag(","), struct_field)(input)?;
+    let (input, fields) = separated_list0(separator, struct_field)(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -246,7 +246,7 @@ fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = multispace1(input)?;
     let (input, name) = map(identifier, ToString::to_string)(input)?;
     let (input, _) = tag("(")(input)?;
-    let (input, args) = separated_list0(tag(","), argument)(input)?;
+    let (input, args) = separated_list0(separator, argument)(input)?;
     let (input, _) = tag(")")(input)?;
 
     let (input, _) = multispace0(input)?;
@@ -257,7 +257,7 @@ fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, exprs) = separated_list0(tag(","), expr)(input)?;
+    let (input, exprs) = separated_list0(separator, expr)(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -285,7 +285,7 @@ fn name_type(input: &str) -> IResult<&str, (String, Type)> {
 
 /* -------------- */
 
-pub fn identifier(input: &str) -> IResult<&str, &str> {
+fn identifier(input: &str) -> IResult<&str, &str> {
     recognize(
         pair(
             alt((alpha1, tag("_"))),
@@ -300,4 +300,11 @@ fn decimal(input: &str) -> IResult<&str, &str> {
             terminated(one_of("0123456789"), many0(char('_')))
         )
     )(input)
+}
+
+fn separator(input: &str) -> IResult<&str, ()> {
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag(",")(input)?;
+    let (input, _) = multispace0(input)?;
+    Ok((input, ()))
 }
