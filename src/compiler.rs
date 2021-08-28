@@ -2,6 +2,8 @@ use crate::parser;
 use crate::parser::Expression;
 use crate::require;
 
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub enum Code {
     Nop,
@@ -51,18 +53,32 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
         Expression::Name(name) => {
             Ok(Code::Read(name))
         },
-        Expression::Function(_) => {
-            todo!()
+        Expression::Function(function) => {
+            assert!(!compiler.fn_asts.contains_key(&function.name));
+            compiler.fn_asts.insert(function.name.clone(), function);
+            // todo remove me and compile lazily
+            compile_function(compiler, function)?;
+            Ok(Code::Nop)
         },
     }
 }
 
+fn compile_function(compiler: &mut Compiler, function: parser::Function) -> Result<(), CompileError> {
+    todo!()
+}
+
+pub struct CompiledFunction {
+    code: Vec<Code>,
+}
+
 pub struct Compiler {
+    fn_asts: HashMap<String, parser::Function>,
 }
 
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler {
+            fn_asts: HashMap::new(),
         }
     }
 

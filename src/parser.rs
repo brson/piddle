@@ -229,10 +229,10 @@ fn require(input: &str) -> IResult<&str, Require> {
 
 #[derive(Debug)]
 pub struct Function {
-    name: String,
-    args: Vec<Argument>,
-    return_type: Type,
-    exprs: Vec<Expression>,
+    pub name: String,
+    pub args: Vec<Argument>,
+    pub return_type: Type,
+    pub exprs: Vec<Expression>,
 }
 
 #[derive(Debug)]
