@@ -11,6 +11,10 @@ pub enum Code {
     IntrinsicLiteralInt32(i32),
     Set(String, Box<Code>),
     Read(String),
+    Call {
+        name: String,
+        args: Vec<Code>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -62,7 +66,16 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             Ok(Code::Nop)
         },
         Expression::Call(call) => {
-            todo!()
+            compile_function(compiler, &call.name)?;
+            let mut code_args = vec![];
+            for arg in call.args {
+                let code_arg = compile_expression(compiler, arg)?;
+                code_args.push(code_arg);
+            }
+            Ok(Code::Call {
+                name: call.name,
+                args: code_args,
+            })
         },
     }
 }

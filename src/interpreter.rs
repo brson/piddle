@@ -37,6 +37,9 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
             let eval = eval.clone();
             Ok(eval)
         }
+        Code::Call { name, args } => {
+            todo!()
+        }
     }
 }
 
