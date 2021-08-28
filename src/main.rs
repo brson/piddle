@@ -5,6 +5,8 @@ use std::error::Error;
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
 
+use std::panic::{self, AssertUnwindSafe};
+
 mod parser;
 mod compiler;
 mod interpreter;
@@ -54,14 +56,25 @@ enum ReadEvalError {
     Compile(#[from] compiler::CompileError),
     #[error("running")]
     Run(#[from] interpreter::RunError),
+    #[error("runtime panic")]
+    RuntimePanic,
 }
 
 fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
-    let expr = read_expression(readline)?;
-    let expr = compile_expression(compiler, expr)?;
-    let expr = run_expression(env, expr)?;
+    let res = panic::catch_unwind(AssertUnwindSafe(|| {
+        let expr = read_expression(readline)?;
+        let expr = compile_expression(compiler, expr)?;
+        let expr = run_expression(env, expr)?;
 
-    Ok(expr)
+        Ok(expr)
+    }));
+
+    match res {
+        Ok(res) => res,
+        Err(e) => {
+            Err(ReadEvalError::RuntimePanic)
+        }
+    }
 }
 
 fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalError> {
