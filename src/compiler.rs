@@ -61,6 +61,9 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             compile_function(compiler, &name)?;
             Ok(Code::Nop)
         },
+        Expression::Call(call) => {
+            todo!()
+        },
     }
 }
 

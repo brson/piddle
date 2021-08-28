@@ -65,6 +65,7 @@ pub enum Expression {
     Struct(Struct),
     Require(Require),
     Function(Function),
+    Call(Call),
 }
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
@@ -75,6 +76,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
         map(function, Expression::Function),
+        map(call, Expression::Call),
         map(name, Expression::Name),
     ))(input)?;
     Ok((input, expr))
@@ -273,6 +275,28 @@ fn argument(input: &str) -> IResult<&str, Argument> {
     }))
 }
 
+#[derive(Debug)]
+pub struct Call {
+    pub name: String,
+    pub args: Vec<Expression>,
+}
+
+fn call(input: &str) -> IResult<&str, Call> {
+    let (input, _) = tag("call")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = tag("(")(input)?;
+    let (input, args) = separated_list0(separator, expr)(input)?;
+    let (input, _) = tag(")")(input)?;
+
+    Ok((input, Call {
+        name, args,
+    }))
+}
+
+
+/* -------------- */
+
 fn name_type(input: &str) -> IResult<&str, (String, Type)> {
     let (input, name) = map(identifier, ToString::to_string)(input)?;
     let (input, _) = tag(":")(input)?;
@@ -281,9 +305,6 @@ fn name_type(input: &str) -> IResult<&str, (String, Type)> {
 
     Ok((input, (name, type_)))
 }
-
-
-/* -------------- */
 
 fn identifier(input: &str) -> IResult<&str, &str> {
     recognize(
