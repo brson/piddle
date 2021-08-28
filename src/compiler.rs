@@ -65,6 +65,12 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
 }
 
 fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileError> {
+    if compiler.fns.contains_key(name) {
+        return Ok(());
+    }
+
+    assert!(compiler.fn_asts.contains_key(name));
+
     todo!()
 }
 
@@ -74,12 +80,14 @@ pub struct CompiledFunction {
 
 pub struct Compiler {
     fn_asts: HashMap<String, parser::Function>,
+    fns: HashMap<String, CompiledFunction>,
 }
 
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler {
             fn_asts: HashMap::new(),
+            fns: HashMap::new(),
         }
     }
 
