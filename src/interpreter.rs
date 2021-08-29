@@ -9,7 +9,7 @@ pub enum RunError {
 
 #[derive(Default)]
 pub struct Environment {
-    arguments: Vec<Evaluation>,
+    args: Vec<Evaluation>,
     values: HashMap<String, Evaluation>,
 }
 
@@ -23,7 +23,7 @@ pub enum Evaluation {
     IntrinsicInt32(i32),
 }
 
-pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, RunError> {
+pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) -> Result<Evaluation, RunError> {
     match expr {
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),
@@ -37,12 +37,12 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
         }
         Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
         Code::Set(name, code) => {
-            let eval = run_expression(env, *code)?;
+            let eval = run_expression(env, tables, *code)?;
             env.values.insert(name, eval);
             Ok(Evaluation::Nil)
         }
         Code::SetArg { name, arg_no } => {
-            let eval = env.arguments.remove(arg_no);
+            let eval = env.args.remove(arg_no);
             env.values.insert(name, eval);
             Ok(Evaluation::Nil)
         }
@@ -56,7 +56,22 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
             Ok(eval)
         }
         Code::Call { name, args } => {
-            todo!()
+            let fn_ = &tables.fns[&name];
+            let mut eval_args = vec![];
+            for arg in args {
+                let eval = run_expression(env, tables, arg)?;
+                eval_args.push(eval);
+            }
+            let mut env = Environment {
+                args: eval_args,
+                .. Environment::default()
+            };
+            let mut final_eval = Evaluation::Nil;
+            for code in &fn_.codes {
+                let code = code.clone();
+                final_eval = run_expression(&mut env, tables, code)?;
+            }
+            Ok(final_eval)
         }
     }
 }

@@ -72,7 +72,7 @@ fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Edit
     let res = panic::catch_unwind(AssertUnwindSafe(|| {
         let expr = read_expression(readline)?;
         let expr = compile_expression(compiler, expr)?;
-        let expr = run_expression(env, expr)?;
+        let expr = run_expression(compiler, env, expr)?;
 
         Ok(expr)
     }));
@@ -101,6 +101,9 @@ fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code,
     Ok(compiler::compile_expression(compiler, expr)?)
 }
 
-fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
-    Ok(interpreter::run_expression(env, expr)?)
+fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
+    let tables = interpreter::Tables {
+        fns: &compiler.fns,
+    };
+    Ok(interpreter::run_expression(env, &tables, expr)?)
 }

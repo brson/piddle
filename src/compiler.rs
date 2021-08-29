@@ -5,7 +5,7 @@ use crate::require;
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Code {
     Nop,
     Clear,
@@ -123,7 +123,7 @@ fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileEr
 }
 
 pub struct CompiledFunction {
-    codes: Vec<Code>,
+    pub codes: Vec<Code>,
 }
 
 pub struct Compiler {
