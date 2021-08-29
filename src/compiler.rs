@@ -3,6 +3,7 @@ use crate::parser::Expression;
 use crate::require;
 
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 #[derive(Debug)]
 pub enum Code {
@@ -10,6 +11,10 @@ pub enum Code {
     Clear,
     IntrinsicLiteralInt32(i32),
     Set(String, Box<Code>),
+    SetArg {
+        name: String,
+        arg_no: usize,
+    },
     Read(String),
     Call {
         name: String,
@@ -94,11 +99,31 @@ fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileEr
 
     assert!(compiler.fn_asts.contains_key(name));
 
-    todo!()
+    let ast = &compiler.fn_asts[name];
+    let ast = ast.clone();
+
+    let mut codes = vec![];
+
+    for (i, arg) in ast.args.into_iter().enumerate() {
+        codes.push(Code::SetArg { name: arg.name, arg_no: i });
+    }
+
+    for expr in ast.exprs {
+        let code = compile_expression(compiler, expr)?;
+        codes.push(code);
+    }
+
+    let compiled = CompiledFunction {
+        codes
+    };
+
+    compiler.fns.insert(name.to_string(), compiled);
+
+    Ok(())
 }
 
 pub struct CompiledFunction {
-    code: Vec<Code>,
+    codes: Vec<Code>,
 }
 
 pub struct Compiler {

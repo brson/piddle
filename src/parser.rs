@@ -56,7 +56,7 @@ pub enum Declaration {
     Require(Require),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     IntrinsicCall(IntrinsicCall),
     IntrinsicLiteral(IntrinsicLiteral),
@@ -102,7 +102,7 @@ fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
     Ok((input, intrinsic))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IntrinsicLiteral {
     Int32(String),
 }
@@ -113,7 +113,7 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
     Ok((input, lit))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Set {
     pub name: String,
     pub type_: Type,
@@ -230,7 +230,7 @@ fn require(input: &str) -> IResult<&str, Require> {
     }))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
     pub args: Vec<Argument>,
@@ -238,10 +238,10 @@ pub struct Function {
     pub exprs: Vec<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Argument {
-    name: String,
-    type_: Type,
+    pub name: String,
+    pub type_: Type,
 }
 
 fn function(input: &str) -> IResult<&str, Function> {
@@ -276,7 +276,7 @@ fn argument(input: &str) -> IResult<&str, Argument> {
     }))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Call {
     pub name: String,
     pub args: Vec<Expression>,

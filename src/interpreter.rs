@@ -9,6 +9,7 @@ pub enum RunError {
 
 #[derive(Default)]
 pub struct Environment {
+    arguments: Vec<Evaluation>,
     values: HashMap<String, Evaluation>,
 }
 
@@ -33,6 +34,11 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
         Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
         Code::Set(name, code) => {
             let eval = run_expression(env, *code)?;
+            env.values.insert(name, eval);
+            Ok(Evaluation::Nil)
+        }
+        Code::SetArg { name, arg_no } => {
+            let eval = env.arguments.remove(arg_no);
             env.values.insert(name, eval);
             Ok(Evaluation::Nil)
         }
