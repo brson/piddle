@@ -280,6 +280,7 @@ fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = tag("fn")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
     let (input, args) = separated_list0(separator, argument)(input)?;
     let (input, _) = tag(")")(input)?;
