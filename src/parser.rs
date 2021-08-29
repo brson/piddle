@@ -27,6 +27,7 @@ use nom::{
     sequence::{
         pair,
         terminated,
+        delimited,
     },
 };
 
@@ -36,7 +37,11 @@ pub struct Module {
 }
 
 pub fn module(input: &str) -> IResult<&str, Module> {
-    let(input, decls) = many0(declaration)(input)?;
+    let(input, decls) = many0(delimited(
+        multispace0,
+        declaration,
+        multispace0
+    ))(input)?;
     Ok((input, Module {
         decls,
     }))
