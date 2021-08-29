@@ -51,6 +51,8 @@ pub fn declaration(input: &str) -> IResult<&str, Declaration> {
     let (input, decl) = alt((
         map(struct_, Declaration::Struct),
         map(require, Declaration::Require),
+        map(import, Declaration::Import),
+        map(function, Declaration::Function),
     ))(input)?;
     Ok((input, decl))
 }

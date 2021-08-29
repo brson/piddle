@@ -22,7 +22,6 @@ pub fn load(compiler: &mut Compiler, group: &str, module: &str) -> Result<(), Er
     }
 
     let ast = read_ast(group, module)?;
-    println!("{:?}", ast);
     let decls = ast.decls.clone();
 
     compiler.add_module(group, module, ast);
