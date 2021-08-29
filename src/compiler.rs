@@ -128,7 +128,7 @@ pub struct CompiledFunction {
 
 pub struct Compiler {
     fn_asts: HashMap<String, parser::Function>,
-    fns: HashMap<String, CompiledFunction>,
+    pub fns: HashMap<String, CompiledFunction>,
     module_asts: HashMap<(String, String), parser::Module>,
 }
 

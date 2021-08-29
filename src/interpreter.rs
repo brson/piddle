@@ -1,4 +1,4 @@
-use crate::compiler::Code;
+use crate::compiler::{self, Code};
 
 use std::collections::HashMap;
 
@@ -11,6 +11,10 @@ pub enum RunError {
 pub struct Environment {
     arguments: Vec<Evaluation>,
     values: HashMap<String, Evaluation>,
+}
+
+pub struct Tables<'compiler> {
+    pub fns: &'compiler HashMap<String, compiler::CompiledFunction>,
 }
 
 #[derive(Debug, Clone)]
