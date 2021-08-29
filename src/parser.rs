@@ -54,6 +54,8 @@ pub fn declaration(input: &str) -> IResult<&str, Declaration> {
 pub enum Declaration {
     Struct(Struct),
     Require(Require),
+    Import(Import),
+    Function(Function),
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +66,7 @@ pub enum Expression {
     Name(String),
     Struct(Struct),
     Require(Require),
+    Import(Import),
     Function(Function),
     Call(Call),
 }
@@ -75,6 +78,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(set, Expression::Set),
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
+        map(import, Expression::Import),
         map(function, Expression::Function),
         map(call, Expression::Call),
         map(name, Expression::Name),
@@ -222,11 +226,32 @@ fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, group) = map(identifier, ToString::to_string)(input)?;
-    let (input, _) = tag("/")(input)?;
+    let (input, _) = multispace1(input)?;
     let (input, module) = map(identifier, ToString::to_string)(input)?;
 
     Ok((input, Require {
         group, module,
+    }))
+}
+
+#[derive(Debug, Clone)]
+pub struct Import {
+    pub group: String,
+    pub module: String,
+    pub item: String,
+}
+
+fn import(input: &str) -> IResult<&str, Import> {
+    let (input, _) = tag("import")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, module) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, item) = map(identifier, ToString::to_string)(input)?;
+
+    Ok((input, Import {
+        group, module, item,
     }))
 }
 

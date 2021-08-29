@@ -35,6 +35,10 @@ pub enum CompileError {
     ParseInt(#[from] std::num::ParseIntError),
     #[error("loading module")]
     Require(#[from] require::Error),
+    #[error("unknown module in import, {0}/{1}")]
+    UnknownImportModule(String, String),
+    #[error("item {2} not found in module {0}/{1}")]
+    ItemNotFoundInModule(String, String, String),
 }
 
 pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, CompileError> {
@@ -48,8 +52,12 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
         Expression::IntrinsicCall(parser::IntrinsicCall::Dump) => {
             println!("# compiler");
             println!("## function asts");
-            for fn_ast in compiler.fn_asts.values() {
-                println!("{}", fn_ast.name);
+            for ast in compiler.fn_asts.values() {
+                println!("{}", ast.name);
+            }
+            println!("## module asts");
+            for (group, module) in compiler.module_asts.keys() {
+                println!("{}/{}", group, module);
             }
             Ok(Code::Dump)
         }
@@ -57,6 +65,34 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             require::load(compiler, &group, &module)?;
             Ok(Code::Nop)
         },
+        Expression::Import(parser::Import { group, module, item }) => {
+            let module_ast = compiler.module_asts.get(&(group.clone(), module.clone()))
+                .ok_or_else(|| CompileError::UnknownImportModule(group.clone(), module.clone()))?;
+            let mut found_item = None;
+            for decl in &module_ast.decls {
+                match decl {
+                    parser::Declaration::Function(parser::Function { name, .. }) => {
+                        if *name == item {
+                            found_item = Some(decl.clone());
+                            break;
+                        }
+                    }
+                    _ => todo!()
+                }
+            }
+            if let Some(decl) = found_item {
+                match decl {
+                    parser::Declaration::Function(fn_) => {
+                        let name = fn_.name.clone();
+                        compiler.fn_asts.insert(name, fn_);
+                    }
+                    _ => todo!()
+                }
+            } else {
+                return Err(CompileError::ItemNotFoundInModule(group.clone(), module.clone(), item.clone()));
+            }
+            Ok(Code::Nop)
+        }
         Expression::IntrinsicLiteral(parser::IntrinsicLiteral::Int32(v)) => {
             let i = v.parse()?;
             Ok(Code::IntrinsicLiteralInt32(i))
