@@ -97,6 +97,7 @@ pub struct CompiledFunction {
 pub struct Compiler {
     fn_asts: HashMap<String, parser::Function>,
     fns: HashMap<String, CompiledFunction>,
+    module_asts: HashMap<(String, String), parser::Module>,
 }
 
 impl Compiler {
@@ -104,16 +105,18 @@ impl Compiler {
         Compiler {
             fn_asts: HashMap::new(),
             fns: HashMap::new(),
+            module_asts: HashMap::new(),
         }
     }
 
     pub fn have_module(&self, group: &str, module: &str) -> bool {
-        todo!()
+        self.module_asts.contains_key(&(group.to_string(), module.to_string()))
     }
 
     pub fn add_module(&mut self, group: &str, module: &str, ast: parser::Module) {
         assert!(!self.have_module(group, module));
-        todo!()
+
+        self.module_asts.insert((group.to_string(), module.to_string()), ast);
     }
 }
 
