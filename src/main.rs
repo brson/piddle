@@ -1,6 +1,5 @@
 #![allow(unused)]
 
-use anyhow::Result;
 use std::error::Error;
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
@@ -17,10 +16,20 @@ use parser::Expression;
 use compiler::{Compiler, Code};
 use interpreter::{Environment, Evaluation};
 
-fn main() {
+static REPL_HISTORY_FILE: &str = "repl-history";
+
+fn main() -> anyhow::Result<()> {
     let mut compiler = Compiler::new();
     let mut env = Environment::default();
     let mut readline = Editor::<()>::new();
+
+    let res = readline.load_history(REPL_HISTORY_FILE);
+    match res {
+        Ok(_) => {},
+        Err(ReadlineError::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => {
+        },
+        Err(e) => Err(e)?
+    }
 
     loop {
         match read_eval(&mut compiler, &mut env, &mut readline) {
@@ -30,7 +39,7 @@ fn main() {
             Err(ReadEvalError::Readline(err @ ReadlineError::Eof)) |
             Err(ReadEvalError::Readline(err @ ReadlineError::Interrupted)) => {
                 eprintln!("{}", err);
-                return
+                return Ok(());
             },
             Err(err) => {
                 eprintln!("error: {}", err);
@@ -80,6 +89,7 @@ fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalEr
     let line = readline.readline("> ")?;
 
     readline.add_history_entry(line.clone());
+    readline.append_history(REPL_HISTORY_FILE)?;
 
     let (_, expr) = parser::expr(&line)
         .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
