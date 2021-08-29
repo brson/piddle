@@ -15,6 +15,7 @@ pub enum Code {
         name: String,
         args: Vec<Code>,
     },
+    Dump,
 }
 
 #[derive(Debug, Clone)]
@@ -39,6 +40,14 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
         Expression::IntrinsicCall(parser::IntrinsicCall::Clear) => {
             Ok(Code::Clear)
         }
+        Expression::IntrinsicCall(parser::IntrinsicCall::Dump) => {
+            println!("# compiler");
+            println!("## function asts");
+            for fn_ast in compiler.fn_asts.values() {
+                println!("{}", fn_ast.name);
+            }
+            Ok(Code::Dump)
+        }
         Expression::Require(parser::Require { group, module }) => {
             require::load(compiler, &group, &module)?;
             Ok(Code::Nop)
@@ -61,8 +70,6 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             let name = function.name.clone();
             assert!(!compiler.fn_asts.contains_key(&name));
             compiler.fn_asts.insert(name.clone(), function);
-            // todo remove me and compile lazily
-            compile_function(compiler, &name)?;
             Ok(Code::Nop)
         },
         Expression::Call(call) => {

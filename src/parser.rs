@@ -86,6 +86,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
 pub enum IntrinsicCall {
     Nop,
     Clear,
+    Dump,
 //    Int32WrappingAdd(String, String),
 }
 
@@ -95,7 +96,7 @@ fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
     let (input , intrinsic) = alt((
         value(IntrinsicCall::Nop, tag("nop")),
         value(IntrinsicCall::Clear, tag("clear")),
-        
+        value(IntrinsicCall::Dump, tag("dump")),
     ))(input)?;
 
     Ok((input, intrinsic))

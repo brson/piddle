@@ -33,7 +33,6 @@ fn main() {
                 return
             },
             Err(err) => {
-                eprintln!("{:?}", err);
                 eprintln!("error: {}", err);
 
                 let mut source = err.source();

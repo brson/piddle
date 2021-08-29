@@ -22,6 +22,14 @@ pub fn run_expression(env: &mut Environment, expr: Code) -> Result<Evaluation, R
     match expr {
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),
+        Code::Dump => {
+            println!("# runtime");
+            println!("## values");
+            for (name, value) in &env.values {
+                println!("{}: {}", name, value);
+            }
+            Ok(Evaluation::Nil)
+        }
         Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
         Code::Set(name, code) => {
             let eval = run_expression(env, *code)?;
