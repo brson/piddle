@@ -55,8 +55,8 @@ pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) ->
             env.values.insert(name, eval);
             Ok(Evaluation::Nil)
         }
-        Code::SetArg { name, arg_no } => {
-            let eval = env.args.remove(arg_no);
+        Code::PopArg { name } => {
+            let eval = env.args.pop().expect("pop arg");
             env.values.insert(name, eval);
             Ok(Evaluation::Nil)
         }

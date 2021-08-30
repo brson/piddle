@@ -12,9 +12,8 @@ pub enum Code {
     IntrinsicLiteralInt32(i32),
     IntrinsicCallInt32WrappingAdd(String, String),
     Set(String, Box<Code>),
-    SetArg {
+    PopArg {
         name: String,
-        arg_no: usize,
     },
     Read(String),
     Call {
@@ -144,8 +143,8 @@ fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileEr
 
     let mut codes = vec![];
 
-    for (i, arg) in ast.args.into_iter().enumerate() {
-        codes.push(Code::SetArg { name: arg.name, arg_no: i });
+    for arg in ast.args.into_iter().rev() {
+        codes.push(Code::PopArg { name: arg.name });
     }
 
     for expr in ast.exprs {

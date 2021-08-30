@@ -2,6 +2,6 @@ fn five() -> itype int32 {
     5
 }
 
-fn icall_int32_wrapping_add (a itype int32, b itype int32) -> itype int32 {
+fn icall_int32_wrapping_add(a: itype int32, b: itype int32) -> itype int32 {
     icall int32_wrapping_add a b
 }
