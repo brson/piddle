@@ -23,12 +23,6 @@ pub enum Code {
     Dump,
 }
 
-#[derive(Debug, Clone)]
-pub struct Require {
-    pub group: String,
-    pub module: String,
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum CompileError {
     #[error("parsing integer")]
@@ -56,21 +50,21 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
                 println!("{}", ast.name);
             }
             println!("## module asts");
-            for (group, module) in compiler.modules.keys() {
-                println!("{}/{}", group, module);
+            for module in compiler.modules.keys() {
+                println!("{}/{}", module.group, module.module);
             }
             Ok(Code::Dump)
         }
         Expression::IntrinsicCall(parser::IntrinsicCall::Int32WrappingAdd(a, b)) => {
             Ok(Code::IntrinsicCallInt32WrappingAdd(a, b))
         }
-        Expression::Require(parser::Require { group, module }) => {
-            require::load(compiler, &group, &module)?;
+        Expression::Require(parser::Require { module, .. }) => {
+            require::load(compiler, &module)?;
             Ok(Code::Nop)
         },
-        Expression::Import(parser::Import { group, module, item }) => {
-            let module_ctxt = compiler.modules.get(&(group.clone(), module.clone()))
-                .ok_or_else(|| CompileError::UnknownImportModule(group.clone(), module.clone()))?;
+        Expression::Import(parser::Import { module, item }) => {
+            let module_ctxt = compiler.modules.get(&module)
+                .ok_or_else(|| CompileError::UnknownImportModule(module.group.clone(), module.module.clone()))?;
             let module_ast = &module_ctxt.ast;
             let mut found_item = None;
             for decl in &module_ast.decls {
@@ -93,7 +87,7 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
                     _ => todo!()
                 }
             } else {
-                return Err(CompileError::ItemNotFoundInModule(group.clone(), module.clone(), item.clone()));
+                return Err(CompileError::ItemNotFoundInModule(module.group.clone(), module.module.clone(), item.clone()));
             }
             Ok(Code::Nop)
         }
@@ -169,7 +163,7 @@ pub struct CompiledFunction {
 pub struct Compiler {
     fn_asts: HashMap<String, parser::Function>,
     pub fns: HashMap<String, CompiledFunction>,
-    modules: HashMap<(String, String), ModuleContext>,
+    modules: HashMap<parser::ModuleId, ModuleContext>,
 }
 
 struct ModuleContext {
@@ -187,12 +181,12 @@ impl Compiler {
         }
     }
 
-    pub fn have_module(&self, group: &str, module: &str) -> bool {
-        self.modules.contains_key(&(group.to_string(), module.to_string()))
+    pub fn have_module(&self, module: &parser::ModuleId) -> bool {
+        self.modules.contains_key(&module)
     }
 
-    pub fn add_module(&mut self, group: &str, module: &str, ast: parser::Module) {
-        assert!(!self.have_module(group, module));
+    pub fn add_module(&mut self, module: &parser::ModuleId, ast: parser::Module) {
+        assert!(!self.have_module(module));
 
         let ctxt = ModuleContext {
             ast,
@@ -200,7 +194,7 @@ impl Compiler {
             fns: HashMap::new(),
         };
 
-        self.modules.insert((group.to_string(), module.to_string()), ctxt);
+        self.modules.insert(module.clone(), ctxt);
     }
 }
 

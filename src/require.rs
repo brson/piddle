@@ -16,15 +16,15 @@ pub enum Error {
     Nom(#[from] nom::Err<nom::error::Error<String>>),
 }
 
-pub fn load(compiler: &mut Compiler, group: &str, module: &str) -> Result<(), Error> {
-    if compiler.have_module(group, module) {
+pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Error> {
+    if compiler.have_module(module) {
         return Ok(());
     }
 
-    let ast = read_ast(group, module)?;
+    let ast = read_ast(module)?;
     let decls = ast.decls.clone();
 
-    compiler.add_module(group, module, ast);
+    compiler.add_module(module, ast);
 
     for decl in decls {
         // todo
@@ -33,7 +33,9 @@ pub fn load(compiler: &mut Compiler, group: &str, module: &str) -> Result<(), Er
     Ok(())
 }
 
-fn read_ast(group: &str, module: &str) -> Result<parser::Module, Error> {
+fn read_ast(module: &parser::ModuleId) -> Result<parser::Module, Error> {
+    let group = &module.group;
+    let module = &module.module;
     let path = format!("./lib/{}/{}.piddle", group, module);
     let path = PathBuf::from(path);
     

@@ -246,6 +246,11 @@ fn type_name(input: &str) -> IResult<&str, TypeName> {
 
 #[derive(Debug, Clone)]
 pub struct Require {
+    pub module: ModuleId,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ModuleId {
     pub group: String,
     pub module: String,
 }
@@ -257,15 +262,17 @@ fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = multispace1(input)?;
     let (input, module) = map(identifier, ToString::to_string)(input)?;
 
-    Ok((input, Require {
+    let module = ModuleId {
         group, module,
+    };
+    Ok((input, Require {
+        module,
     }))
 }
 
 #[derive(Debug, Clone)]
 pub struct Import {
-    pub group: String,
-    pub module: String,
+    pub module: ModuleId,
     pub item: String,
 }
 
@@ -278,8 +285,11 @@ fn import(input: &str) -> IResult<&str, Import> {
     let (input, _) = multispace1(input)?;
     let (input, item) = map(identifier, ToString::to_string)(input)?;
 
+    let module = ModuleId {
+        group, module,
+    };
     Ok((input, Import {
-        group, module, item,
+        module, item,
     }))
 }
 
