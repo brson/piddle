@@ -15,6 +15,7 @@ pub struct Environment {
 
 pub struct Tables<'compiler> {
     pub fns: &'compiler HashMap<String, compiler::CompiledFunction>,
+    pub dump: &'compiler dyn Fn(),
 }
 
 #[derive(Debug, Clone)]
@@ -28,6 +29,7 @@ pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) ->
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),
         Code::Dump => {
+            (tables.dump)();
             println!("# runtime");
             println!("## values");
             for (name, value) in &env.values {

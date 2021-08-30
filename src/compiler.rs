@@ -44,33 +44,6 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
             Ok(Code::Clear)
         }
         Expression::IntrinsicCall(parser::IntrinsicCall::Dump) => {
-            println!("# compiler");
-            println!("## modules");
-            for (module, context) in &compiler.modules {
-                println!("- {}/{}", module.group, module.module);
-                if !context.fn_asts.is_empty() {
-                    println!("  - local functions");
-                    for name in context.fn_asts.keys() {
-                        let compiled = context.fns.contains_key(name);
-                        if compiled {
-                            println!("    - {} (compiled)", name);
-                        } else {
-                            println!("    - {}", name);
-                        }
-                    }
-                }
-                if !context.fn_imports.is_empty() {
-                    println!("  - imported functions");
-                    for (name, module) in &context.fn_imports {
-                        let compiled = context.fns.contains_key(name);
-                        if compiled {
-                            println!("    - {} (from {}/{}) (compiled)", name, module.group, module.module);
-                        } else {
-                            println!("    - {} (from {}/{})", name, module.group, module.module);
-                        }
-                    }
-                }
-            }
             Ok(Code::Dump)
         }
         Expression::IntrinsicCall(parser::IntrinsicCall::Int32WrappingAdd(a, b)) => {
@@ -290,3 +263,32 @@ impl Compiler {
     }
 }
 
+pub fn dump(compiler: &Compiler) {
+    println!("# compiler");
+    println!("## modules");
+    for (module, context) in &compiler.modules {
+        println!("- {}/{}", module.group, module.module);
+        if !context.fn_asts.is_empty() {
+            println!("  - local functions");
+            for name in context.fn_asts.keys() {
+                let compiled = context.fns.contains_key(name);
+                if compiled {
+                    println!("    - {} (compiled)", name);
+                } else {
+                    println!("    - {}", name);
+                }
+            }
+        }
+        if !context.fn_imports.is_empty() {
+            println!("  - imported functions");
+            for (name, module) in &context.fn_imports {
+                let compiled = context.fns.contains_key(name);
+                if compiled {
+                    println!("    - {} (from {}/{}) (compiled)", name, module.group, module.module);
+                } else {
+                    println!("    - {} (from {}/{})", name, module.group, module.module);
+                }
+            }
+        }
+    }
+}
