@@ -36,6 +36,20 @@ pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) ->
             Ok(Evaluation::Nil)
         }
         Code::IntrinsicLiteralInt32(i) => Ok(Evaluation::IntrinsicInt32(i)),
+        Code::IntrinsicCallInt32WrappingAdd(a, b) => {
+            let eval_a = env.values.remove(&a).expect("eval");
+            let eval_b = env.values.remove(&b).expect("eval");
+            let val_a = match eval_a {
+                Evaluation::IntrinsicInt32(a) => a,
+                _ => panic!(),
+            };
+            let val_b = match eval_b {
+                Evaluation::IntrinsicInt32(a) => a,
+                _ => panic!(),
+            };
+            let res = val_a.wrapping_add(val_b);
+            Ok(Evaluation::IntrinsicInt32(res))
+        }
         Code::Set(name, code) => {
             let eval = run_expression(env, tables, *code)?;
             env.values.insert(name, eval);

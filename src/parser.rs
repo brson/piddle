@@ -1,5 +1,6 @@
 use nom::{
     IResult,
+    error::Error,
     branch::{
         alt,
     },
@@ -28,6 +29,8 @@ use nom::{
         pair,
         terminated,
         delimited,
+        preceded,
+        tuple,
     },
 };
 
@@ -98,7 +101,7 @@ pub enum IntrinsicCall {
     Nop,
     Clear,
     Dump,
-//    Int32WrappingAdd(String, String),
+    Int32WrappingAdd(String, String),
 }
 
 fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
@@ -108,9 +111,27 @@ fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
         value(IntrinsicCall::Nop, tag("nop")),
         value(IntrinsicCall::Clear, tag("clear")),
         value(IntrinsicCall::Dump, tag("dump")),
+        map(intrinsic2("int32_wrapping_add"), |(a, b)| IntrinsicCall::Int32WrappingAdd(a, b)),
     ))(input)?;
 
     Ok((input, intrinsic))
+}
+
+fn intrinsic2<'a>(name: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, (String, String)>
+{
+    preceded(
+        tag(name),
+        tuple((
+            preceded(
+                multispace1,
+                map(identifier, ToString::to_string),
+            ),
+            preceded(
+                multispace1,
+                map(identifier, ToString::to_string),
+            ),
+        ))
+    )
 }
 
 #[derive(Debug, Clone)]

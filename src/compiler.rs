@@ -10,6 +10,7 @@ pub enum Code {
     Nop,
     Clear,
     IntrinsicLiteralInt32(i32),
+    IntrinsicCallInt32WrappingAdd(String, String),
     Set(String, Box<Code>),
     SetArg {
         name: String,
@@ -60,6 +61,9 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
                 println!("{}/{}", group, module);
             }
             Ok(Code::Dump)
+        }
+        Expression::IntrinsicCall(parser::IntrinsicCall::Int32WrappingAdd(a, b)) => {
+            Ok(Code::IntrinsicCallInt32WrappingAdd(a, b))
         }
         Expression::Require(parser::Require { group, module }) => {
             require::load(compiler, &group, &module)?;
