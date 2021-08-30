@@ -34,7 +34,7 @@ use nom::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Module {
     pub decls: Vec<Declaration>,
 }
