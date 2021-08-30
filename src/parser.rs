@@ -65,6 +65,7 @@ pub enum Declaration {
     Struct(Struct),
     Require(Require),
     Import(Import),
+    ImportAll(ImportAll),
     Function(Function),
 }
 
@@ -77,6 +78,7 @@ pub enum Expression {
     Struct(Struct),
     Require(Require),
     Import(Import),
+    ImportAll(ImportAll),
     Function(Function),
     Call(Call),
 }
@@ -89,6 +91,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(struct_, Expression::Struct),
         map(require, Expression::Require),
         map(import, Expression::Import),
+        map(import_all, Expression::ImportAll),
         map(function, Expression::Function),
         map(call, Expression::Call),
         map(name, Expression::Name),
@@ -291,6 +294,26 @@ fn import(input: &str) -> IResult<&str, Import> {
     };
     Ok((input, Import {
         module, item,
+    }))
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportAll {
+    pub module: ModuleId,
+}
+
+fn import_all(input: &str) -> IResult<&str, ImportAll> {
+    let (input, _) = tag("importall")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, module) = map(identifier, ToString::to_string)(input)?;
+
+    let module = ModuleId {
+        group, module,
+    };
+    Ok((input, ImportAll {
+        module,
     }))
 }
 

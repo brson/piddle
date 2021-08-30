@@ -112,6 +112,9 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
             }
             Ok(Code::Nop)
         }
+        Expression::ImportAll(parser::ImportAll { module: from_module }) => {
+            todo!()
+        }
         Expression::IntrinsicLiteral(parser::IntrinsicLiteral::Int32(v)) => {
             let i = v.parse()?;
             Ok(Code::IntrinsicLiteralInt32(i))
