@@ -35,7 +35,7 @@ pub enum CompileError {
     ItemNotFoundInModule(String, String, String),
 }
 
-pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, CompileError> {
+pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, expr: Expression) -> Result<Code, CompileError> {
     match expr {
         Expression::IntrinsicCall(parser::IntrinsicCall::Nop) => {
             Ok(Code::Nop)
@@ -62,9 +62,9 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             require::load(compiler, &module)?;
             Ok(Code::Nop)
         },
-        Expression::Import(parser::Import { module, item }) => {
-            let module_ctxt = compiler.modules.get(&module)
-                .ok_or_else(|| CompileError::UnknownImportModule(module.group.clone(), module.module.clone()))?;
+        Expression::Import(parser::Import { module: from_module, item }) => {
+            let module_ctxt = compiler.modules.get(&from_module)
+                .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
             let module_ast = &module_ctxt.ast;
             let mut found_item = None;
             for decl in &module_ast.decls {
@@ -75,7 +75,7 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
                             break;
                         }
                     }
-                    _ => todo!()
+                    _ => { }
                 }
             }
             if let Some(decl) = found_item {
@@ -87,7 +87,7 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
                     _ => todo!()
                 }
             } else {
-                return Err(CompileError::ItemNotFoundInModule(module.group.clone(), module.module.clone(), item.clone()));
+                return Err(CompileError::ItemNotFoundInModule(from_module.group.clone(), from_module.module.clone(), item.clone()));
             }
             Ok(Code::Nop)
         }
@@ -99,7 +99,7 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             todo!()
         },
         Expression::Set(parser::Set { name, type_, expr }) => {
-            let expr = compile_expression(compiler, *expr)?;
+            let expr = compile_expression(compiler, module, *expr)?;
             Ok(Code::Set(name, Box::new(expr)))
         },
         Expression::Name(name) => {
@@ -112,10 +112,10 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             Ok(Code::Nop)
         },
         Expression::Call(call) => {
-            compile_function(compiler, &call.name)?;
+            compile_function(compiler, module, &call.name)?;
             let mut code_args = vec![];
             for arg in call.args {
-                let code_arg = compile_expression(compiler, arg)?;
+                let code_arg = compile_expression(compiler, module, arg)?;
                 code_args.push(code_arg);
             }
             Ok(Code::Call {
@@ -126,7 +126,7 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
     }
 }
 
-fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileError> {
+fn compile_function(compiler: &mut Compiler, module: &parser::ModuleId, name: &str) -> Result<(), CompileError> {
     if compiler.fns.contains_key(name) {
         return Ok(());
     }
@@ -143,7 +143,7 @@ fn compile_function(compiler: &mut Compiler, name: &str) -> Result<(), CompileEr
     }
 
     for expr in ast.exprs {
-        let code = compile_expression(compiler, expr)?;
+        let code = compile_expression(compiler, module, expr)?;
         codes.push(code);
     }
 

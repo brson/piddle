@@ -106,7 +106,7 @@ fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalEr
 }
 
 fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, ReadEvalError> {
-    Ok(compiler::compile_expression(compiler, expr)?)
+    Ok(compiler::compile_expression(compiler, &REPL_MODULE, expr)?)
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
