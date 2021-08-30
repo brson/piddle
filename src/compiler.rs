@@ -56,7 +56,7 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
                 println!("{}", ast.name);
             }
             println!("## module asts");
-            for (group, module) in compiler.module_asts.keys() {
+            for (group, module) in compiler.modules.keys() {
                 println!("{}/{}", group, module);
             }
             Ok(Code::Dump)
@@ -69,8 +69,9 @@ pub fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<C
             Ok(Code::Nop)
         },
         Expression::Import(parser::Import { group, module, item }) => {
-            let module_ast = compiler.module_asts.get(&(group.clone(), module.clone()))
+            let module_ctxt = compiler.modules.get(&(group.clone(), module.clone()))
                 .ok_or_else(|| CompileError::UnknownImportModule(group.clone(), module.clone()))?;
+            let module_ast = &module_ctxt.ast;
             let mut found_item = None;
             for decl in &module_ast.decls {
                 match decl {
@@ -168,7 +169,13 @@ pub struct CompiledFunction {
 pub struct Compiler {
     fn_asts: HashMap<String, parser::Function>,
     pub fns: HashMap<String, CompiledFunction>,
-    module_asts: HashMap<(String, String), parser::Module>,
+    modules: HashMap<(String, String), ModuleContext>,
+}
+
+struct ModuleContext {
+    ast: parser::Module,
+    fn_asts: HashMap<String, parser::Function>,
+    pub fns: HashMap<String, CompiledFunction>,
 }
 
 impl Compiler {
@@ -176,18 +183,24 @@ impl Compiler {
         Compiler {
             fn_asts: HashMap::new(),
             fns: HashMap::new(),
-            module_asts: HashMap::new(),
+            modules: HashMap::new(),
         }
     }
 
     pub fn have_module(&self, group: &str, module: &str) -> bool {
-        self.module_asts.contains_key(&(group.to_string(), module.to_string()))
+        self.modules.contains_key(&(group.to_string(), module.to_string()))
     }
 
     pub fn add_module(&mut self, group: &str, module: &str, ast: parser::Module) {
         assert!(!self.have_module(group, module));
 
-        self.module_asts.insert((group.to_string(), module.to_string()), ast);
+        let ctxt = ModuleContext {
+            ast,
+            fn_asts: HashMap::new(),
+            fns: HashMap::new(),
+        };
+
+        self.modules.insert((group.to_string(), module.to_string()), ctxt);
     }
 }
 
