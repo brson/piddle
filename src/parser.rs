@@ -216,6 +216,7 @@ pub struct TypeName(String);
 
 #[derive(Debug, Clone)]
 pub enum TypeIntrinsic {
+    Nil,
     Int32,
 }
 
@@ -232,7 +233,7 @@ fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
     let (input, _) = tag("itype")(input)?;
     let (input, _) = multispace1(input)?;
     let (input , intrinsic) = alt((
-        value(TypeIntrinsic::Int32, tag("int32")),
+        value(TypeIntrinsic::Nil, tag("nil")),
         value(TypeIntrinsic::Int32, tag("int32")),
     ))(input)?;
 

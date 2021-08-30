@@ -1,3 +1,15 @@
-fn icall_int32_wrapping_add(a: itype int32, b: itype int32) -> itype int32 {
+fn nop () -> itype nil {
+    icall nop
+}
+
+fn clear () -> itype nil {
+    icall clear
+}
+
+fn dump () -> itype nil {
+    icall dump
+}
+
+fn int32_wrapping_add (a: itype int32, b: itype int32) -> itype int32 {
     icall int32_wrapping_add a b
 }
