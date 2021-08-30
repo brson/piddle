@@ -45,11 +45,7 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
         }
         Expression::IntrinsicCall(parser::IntrinsicCall::Dump) => {
             println!("# compiler");
-            println!("## function asts");
-            for ast in compiler.fn_asts.values() {
-                println!("{}", ast.name);
-            }
-            println!("## module asts");
+            println!("## modules");
             for module in compiler.modules.keys() {
                 println!("{}/{}", module.group, module.module);
             }
@@ -217,8 +213,6 @@ pub struct CompiledFunction {
 }
 
 pub struct Compiler {
-    fn_asts: HashMap<String, parser::Function>,
-    pub fns: HashMap<String, CompiledFunction>,
     pub modules: HashMap<parser::ModuleId, ModuleContext>,
 }
 
@@ -232,8 +226,6 @@ pub struct ModuleContext {
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler {
-            fn_asts: HashMap::new(),
-            fns: HashMap::new(),
             modules: HashMap::new(),
         }
     }
