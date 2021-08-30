@@ -63,11 +63,11 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
             Ok(Code::Nop)
         },
         Expression::Import(parser::Import { module: from_module, item }) => {
-            let module_ctxt = compiler.modules.get(&from_module)
+            let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
                 .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
-            let module_ast = &module_ctxt.ast;
+            let from_module_ast = &from_module_ctxt.ast;
             let mut found_item = None;
-            for decl in &module_ast.decls {
+            for decl in &from_module_ast.decls {
                 match decl {
                     parser::Declaration::Function(parser::Function { name, .. }) => {
                         if *name == item {
@@ -82,7 +82,10 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
                 match decl {
                     parser::Declaration::Function(fn_) => {
                         let name = fn_.name.clone();
-                        compiler.fn_asts.insert(name, fn_);
+                        from_module_ctxt.fn_asts.insert(name.clone(), fn_);
+                        drop(from_module_ctxt);
+                        let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+                        module_ctxt.fn_imports.insert(name, from_module.clone());
                     }
                     _ => todo!()
                 }
@@ -106,9 +109,10 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
             Ok(Code::Read(name))
         },
         Expression::Function(function) => {
+            let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
             let name = function.name.clone();
-            assert!(!compiler.fn_asts.contains_key(&name));
-            compiler.fn_asts.insert(name.clone(), function);
+            assert!(!module_ctxt.fn_asts.contains_key(&name));
+            module_ctxt.fn_asts.insert(name.clone(), function);
             Ok(Code::Nop)
         },
         Expression::Call(call) => {
@@ -127,35 +131,87 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
 }
 
 fn compile_function(compiler: &mut Compiler, module: &parser::ModuleId, name: &str) -> Result<(), CompileError> {
-    if compiler.fns.contains_key(name) {
+    let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+
+    if module_ctxt.fns.contains_key(name) {
         return Ok(());
     }
 
-    assert!(compiler.fn_asts.contains_key(name));
+    if module_ctxt.fn_asts.contains_key(name) {
 
-    let ast = &compiler.fn_asts[name];
-    let ast = ast.clone();
+        let ast = &module_ctxt.fn_asts[name];
+        let ast = ast.clone();
 
-    let mut codes = vec![];
+        let mut codes = vec![];
 
-    for arg in ast.args.into_iter().rev() {
-        codes.push(Code::PopArg { name: arg.name });
+        for arg in ast.args.into_iter().rev() {
+            codes.push(Code::PopArg { name: arg.name });
+        }
+
+        drop(module_ctxt);
+
+        for expr in ast.exprs {
+            let code = compile_expression(compiler, module, expr)?;
+            codes.push(code);
+        }
+
+        let compiled = CompiledFunction {
+            codes
+        };
+
+        let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+        module_ctxt.fns.insert(name.to_string(), compiled);
     }
 
-    for expr in ast.exprs {
-        let code = compile_expression(compiler, module, expr)?;
-        codes.push(code);
+    let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+
+    // If the name is imported from another module
+    if module_ctxt.fn_imports.contains_key(name) {
+        let other_module = module_ctxt.fn_imports[name].clone();
+        drop(module_ctxt);
+
+        let other_module_ctxt = compiler.modules.get_mut(&other_module).expect("module");
+
+        // See if the external function has already been compiled
+        if other_module_ctxt.fns.contains_key(name) {
+            let compiled_fn = other_module_ctxt.fns[name].clone();
+            drop(other_module_ctxt);
+            let module_ctxt = compiler.modules.get_mut(module).expect("module");
+            module_ctxt.fns.insert(name.to_string(), compiled_fn);
+            return Ok(());
+        }
+
+        let ast = &other_module_ctxt.fn_asts[name];
+        let ast = ast.clone();
+
+        let mut codes = vec![];
+
+        for arg in ast.args.into_iter().rev() {
+            codes.push(Code::PopArg { name: arg.name });
+        }
+
+        drop(other_module_ctxt);
+
+        for expr in ast.exprs {
+            let code = compile_expression(compiler, &other_module, expr)?;
+            codes.push(code);
+        }
+
+        let compiled = CompiledFunction {
+            codes
+        };
+
+        let mut other_module_ctxt = compiler.modules.get_mut(&other_module).expect("module");
+        other_module_ctxt.fns.insert(name.to_string(), compiled.clone());
+        drop(other_module_ctxt);
+        let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+        module_ctxt.fns.insert(name.to_string(), compiled);
     }
-
-    let compiled = CompiledFunction {
-        codes
-    };
-
-    compiler.fns.insert(name.to_string(), compiled);
 
     Ok(())
 }
 
+#[derive(Clone)]
 pub struct CompiledFunction {
     pub codes: Vec<Code>,
 }
@@ -163,13 +219,14 @@ pub struct CompiledFunction {
 pub struct Compiler {
     fn_asts: HashMap<String, parser::Function>,
     pub fns: HashMap<String, CompiledFunction>,
-    modules: HashMap<parser::ModuleId, ModuleContext>,
+    pub modules: HashMap<parser::ModuleId, ModuleContext>,
 }
 
-struct ModuleContext {
+pub struct ModuleContext {
     ast: parser::Module,
     fn_asts: HashMap<String, parser::Function>,
     pub fns: HashMap<String, CompiledFunction>,
+    fn_imports: HashMap<String, parser::ModuleId>,
 }
 
 impl Compiler {
@@ -192,6 +249,7 @@ impl Compiler {
             ast,
             fn_asts: HashMap::new(),
             fns: HashMap::new(),
+            fn_imports: HashMap::new(),
         };
 
         self.modules.insert(module.clone(), ctxt);

@@ -28,6 +28,10 @@ lazy_static! {
 
 fn main() -> anyhow::Result<()> {
     let mut compiler = Compiler::new();
+    compiler.add_module(&REPL_MODULE, parser::Module {
+        decls: vec![],
+    });
+
     let mut env = Environment::default();
     let mut readline = Editor::<()>::new();
 
@@ -110,8 +114,9 @@ fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code,
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
+    let module_ctxt = compiler.modules.get(&REPL_MODULE).expect("module");
     let tables = interpreter::Tables {
-        fns: &compiler.fns,
+        fns: &module_ctxt.fns,
     };
     Ok(interpreter::run_expression(env, &tables, expr)?)
 }
