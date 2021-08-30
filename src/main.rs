@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+use lazy_static::lazy_static;
 use std::error::Error;
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
@@ -17,6 +18,13 @@ use compiler::{Compiler, Code};
 use interpreter::{Environment, Evaluation};
 
 static REPL_HISTORY_FILE: &str = "repl-history";
+
+lazy_static! {
+    static ref REPL_MODULE: parser::ModuleId = parser::ModuleId {
+        group: "local".to_string(),
+        module: "main".to_string(),
+    };
+}
 
 fn main() -> anyhow::Result<()> {
     let mut compiler = Compiler::new();

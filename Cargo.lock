@@ -235,6 +235,7 @@ name = "piddle"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "lazy_static",
  "nom",
  "rustyline",
  "structopt",
