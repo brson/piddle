@@ -97,8 +97,8 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
     }
 }
 
-fn import(compiler: &mut Compiler, module: &parser::ModuleId,
-          from_module: &parser::ModuleId, item: &str) -> Result<(), CompileError> {
+pub fn import(compiler: &mut Compiler, module: &parser::ModuleId,
+              from_module: &parser::ModuleId, item: &str) -> Result<(), CompileError> {
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
         .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
     let from_module_ast = &from_module_ctxt.ast;
@@ -132,8 +132,8 @@ fn import(compiler: &mut Compiler, module: &parser::ModuleId,
     Ok(())
 }
 
-fn import_all(compiler: &mut Compiler, module: &parser::ModuleId,
-              from_module: &parser::ModuleId) -> Result<(), CompileError> {
+pub fn import_all(compiler: &mut Compiler, module: &parser::ModuleId,
+                  from_module: &parser::ModuleId) -> Result<(), CompileError> {
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
         .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
     let from_module_ast = from_module_ctxt.ast.clone();
@@ -236,7 +236,7 @@ fn compile_function(compiler: &mut Compiler, module: &parser::ModuleId, name: &s
     Ok(())
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CompiledFunction {
     pub codes: Vec<Code>,
 }

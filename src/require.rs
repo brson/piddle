@@ -14,6 +14,8 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("parsing module")]
     Nom(#[from] nom::Err<nom::error::Error<String>>),
+    #[error("compiling")]
+    Compile(#[from] Box<crate::compiler::CompileError>),
 }
 
 pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Error> {
@@ -32,11 +34,11 @@ pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Er
                 // fixme recursion
                 load(compiler, &module)?;
             }
-            parser::Declaration::Import(parser::Import { module, item }) => {
-                todo!()
+            parser::Declaration::Import(parser::Import { module: from_module, item }) => {
+                crate::compiler::import(compiler, module, &from_module, &item).map_err(Box::new)?;
             }
-            parser::Declaration::ImportAll(parser::ImportAll { module }) => {
-                todo!()
+            parser::Declaration::ImportAll(parser::ImportAll { module: from_module }) => {
+                crate::compiler::import_all(compiler, module, &from_module).map_err(Box::new)?;
             }
             _ => { /* pass */ }
         }

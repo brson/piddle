@@ -85,6 +85,7 @@ pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) ->
             let mut final_eval = Evaluation::Nil;
             for code in &fn_.codes {
                 let code = code.clone();
+                todo!(); // fixme need to switch tables
                 final_eval = run_expression(&mut env, tables, code)?;
             }
             Ok(final_eval)
