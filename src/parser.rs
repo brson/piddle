@@ -34,10 +34,7 @@ use nom::{
     },
 };
 
-#[derive(Debug, Clone)]
-pub struct Module {
-    pub decls: Vec<Declaration>,
-}
+pub use crate::ast::*;
 
 pub fn module(input: &str) -> IResult<&str, Module> {
     let(input, decls) = many0(delimited(
@@ -60,29 +57,6 @@ pub fn declaration(input: &str) -> IResult<&str, Declaration> {
     Ok((input, decl))
 }
 
-#[derive(Debug, Clone)]
-pub enum Declaration {
-    Struct(Struct),
-    Require(Require),
-    Import(Import),
-    ImportAll(ImportAll),
-    Function(Function),
-}
-
-#[derive(Debug, Clone)]
-pub enum Expression {
-    IntrinsicCall(IntrinsicCall),
-    IntrinsicLiteral(IntrinsicLiteral),
-    Set(Set),
-    Name(String),
-    Struct(Struct),
-    Require(Require),
-    Import(Import),
-    ImportAll(ImportAll),
-    Function(Function),
-    Call(Call),
-}
-
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (input, expr) = alt((
         map(intrinsic_call, Expression::IntrinsicCall),
@@ -97,14 +71,6 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(name, Expression::Name),
     ))(input)?;
     Ok((input, expr))
-}
-
-#[derive(Debug, Clone)]
-pub enum IntrinsicCall {
-    Nop,
-    Clear,
-    Dump,
-    Int32WrappingAdd(String, String),
 }
 
 fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
@@ -137,22 +103,10 @@ fn intrinsic2<'a>(name: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, (Str
     )
 }
 
-#[derive(Debug, Clone)]
-pub enum IntrinsicLiteral {
-    Int32(String),
-}
-
 fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
     let (input, lit) = decimal(input)?;
     let lit = IntrinsicLiteral::Int32(lit.to_string());
     Ok((input, lit))
-}
-
-#[derive(Debug, Clone)]
-pub struct Set {
-    pub name: String,
-    pub type_: Type,
-    pub expr: Box<Expression>,
 }
 
 fn set(input: &str) -> IResult<&str, Set> {
@@ -171,18 +125,6 @@ fn set(input: &str) -> IResult<&str, Set> {
 
 fn name(input: &str) -> IResult<&str, String> {
     map(identifier, ToString::to_string)(input)
-}
-
-#[derive(Debug, Clone)]
-pub struct Struct {
-    name: String,
-    fields: Vec<StructField>,
-}
-
-#[derive(Debug, Clone)]
-pub struct StructField {
-    name: String,
-    type_: Type,
 }
 
 fn struct_(input: &str) -> IResult<&str, Struct> {
@@ -206,21 +148,6 @@ fn struct_field(input: &str) -> IResult<&str, StructField> {
     Ok((input, StructField {
         name, type_,
     }))
-}
-
-#[derive(Debug, Clone)]
-pub enum Type {
-    Name(TypeName),
-    Intrinsic(TypeIntrinsic),
-}
-
-#[derive(Debug, Clone)]
-pub struct TypeName(String);
-
-#[derive(Debug, Clone)]
-pub enum TypeIntrinsic {
-    Nil,
-    Int32,
 }
 
 fn type_(input: &str) -> IResult<&str, Type> {
@@ -248,17 +175,6 @@ fn type_name(input: &str) -> IResult<&str, TypeName> {
     Ok((input, TypeName(name.to_string())))
 }
 
-#[derive(Debug, Clone)]
-pub struct Require {
-    pub module: ModuleId,
-}
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ModuleId {
-    pub group: String,
-    pub module: String,
-}
-
 fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
@@ -272,12 +188,6 @@ fn require(input: &str) -> IResult<&str, Require> {
     Ok((input, Require {
         module,
     }))
-}
-
-#[derive(Debug, Clone)]
-pub struct Import {
-    pub module: ModuleId,
-    pub item: String,
 }
 
 fn import(input: &str) -> IResult<&str, Import> {
@@ -297,11 +207,6 @@ fn import(input: &str) -> IResult<&str, Import> {
     }))
 }
 
-#[derive(Debug, Clone)]
-pub struct ImportAll {
-    pub module: ModuleId,
-}
-
 fn import_all(input: &str) -> IResult<&str, ImportAll> {
     let (input, _) = tag("importall")(input)?;
     let (input, _) = multispace1(input)?;
@@ -315,20 +220,6 @@ fn import_all(input: &str) -> IResult<&str, ImportAll> {
     Ok((input, ImportAll {
         module,
     }))
-}
-
-#[derive(Debug, Clone)]
-pub struct Function {
-    pub name: String,
-    pub args: Vec<Argument>,
-    pub return_type: Type,
-    pub exprs: Vec<Expression>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Argument {
-    pub name: String,
-    pub type_: Type,
 }
 
 fn function(input: &str) -> IResult<&str, Function> {
@@ -362,12 +253,6 @@ fn argument(input: &str) -> IResult<&str, Argument> {
     Ok((input, Argument {
         name, type_,
     }))
-}
-
-#[derive(Debug, Clone)]
-pub struct Call {
-    pub name: String,
-    pub args: Vec<Expression>,
 }
 
 fn call(input: &str) -> IResult<&str, Call> {

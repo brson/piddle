@@ -7,6 +7,7 @@ use rustyline::error::ReadlineError;
 
 use std::panic::{self, AssertUnwindSafe};
 
+mod ast;
 mod parser;
 mod compiler;
 mod interpreter;
