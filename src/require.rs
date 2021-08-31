@@ -27,7 +27,19 @@ pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Er
     compiler.add_module(module, ast);
 
     for decl in decls {
-        // todo
+        match decl {
+            parser::Declaration::Require(parser::Require { module }) => {
+                // fixme recursion
+                load(compiler, &module)?;
+            }
+            parser::Declaration::Import(parser::Import { module, item }) => {
+                todo!()
+            }
+            parser::Declaration::ImportAll(parser::ImportAll { module }) => {
+                todo!()
+            }
+            _ => { /* pass */ }
+        }
     }
 
     Ok(())

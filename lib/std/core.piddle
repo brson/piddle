@@ -1,5 +1,9 @@
 require std intrinsics
 
+import std intrinsics int32_wrapping_add
+
 fn five() -> itype int32 {
-    5
+    set a itype int32 3,
+    set b itype int32 2,
+    call int32_wrapping_add (a, b)
 }
