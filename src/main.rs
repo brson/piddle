@@ -118,7 +118,7 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
     let module_ctxt = compiler.modules.get(&REPL_MODULE).expect("module");
     let tables = interpreter::Tables {
         fns: &module_ctxt.fns,
-        dump: &|| crate::compiler::dump(compiler),
+        dump: &|| compiler::dump(compiler),
     };
     Ok(interpreter::run_expression(env, &tables, expr)?)
 }
