@@ -1,5 +1,7 @@
 use crate::compiler::{self, Code};
 
+use crate::ast;
+
 use std::collections::HashMap;
 
 #[derive(thiserror::Error, Debug)]
@@ -10,11 +12,11 @@ pub enum RunError {
 #[derive(Default)]
 pub struct Environment {
     args: Vec<Evaluation>,
-    values: HashMap<String, Evaluation>,
+    values: HashMap<ast::Name, Evaluation>,
 }
 
 pub struct Tables<'compiler> {
-    pub fns: &'compiler HashMap<String, compiler::CompiledFunction>,
+    pub fns: &'compiler HashMap<ast::Name, compiler::CompiledFunction>,
     pub dump: &'compiler dyn Fn(),
 }
 

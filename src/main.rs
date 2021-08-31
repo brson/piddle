@@ -22,8 +22,8 @@ static REPL_HISTORY_FILE: &str = "repl-history";
 
 lazy_static! {
     static ref REPL_MODULE: ast::ModuleId = ast::ModuleId {
-        group: "local".to_string(),
-        module: "main".to_string(),
+        group: ast::Name::from("local"),
+        module: ast::Name::from("main"),
     };
 }
 

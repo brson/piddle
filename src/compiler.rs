@@ -10,14 +10,14 @@ pub enum Code {
     Nop,
     Clear,
     IntrinsicLiteralInt32(i32),
-    IntrinsicCallInt32WrappingAdd(String, String),
-    Set(String, Box<Code>),
+    IntrinsicCallInt32WrappingAdd(ast::Name, ast::Name),
+    Set(ast::Name, Box<Code>),
     PopArg {
-        name: String,
+        name: ast::Name,
     },
-    Read(String),
+    Read(ast::Name),
     Call {
-        name: String,
+        name: ast::Name,
         args: Vec<Code>,
     },
     Dump,
@@ -30,9 +30,9 @@ pub enum CompileError {
     #[error("loading module")]
     Require(#[from] require::Error),
     #[error("unknown module in import, {0}/{1}")]
-    UnknownImportModule(String, String),
+    UnknownImportModule(ast::Name, ast::Name),
     #[error("item {2} not found in module {0}/{1}")]
-    ItemNotFoundInModule(String, String, String),
+    ItemNotFoundInModule(ast::Name, ast::Name, ast::Name),
 }
 
 pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: Expression) -> Result<Code, CompileError> {
@@ -98,7 +98,7 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
 }
 
 pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
-              from_module: &ast::ModuleId, item: &str) -> Result<(), CompileError> {
+              from_module: &ast::ModuleId, item: &ast::Name) -> Result<(), CompileError> {
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
         .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
     let from_module_ast = &from_module_ctxt.ast;
@@ -106,7 +106,7 @@ pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
     for decl in &from_module_ast.decls {
         match decl {
             ast::Declaration::Function(ast::Function { name, .. }) => {
-                if *name == item {
+                if name == item {
                     found_item = Some(decl.clone());
                     break;
                 }
@@ -126,7 +126,7 @@ pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
             _ => todo!()
         }
     } else {
-        return Err(CompileError::ItemNotFoundInModule(from_module.group.clone(), from_module.module.clone(), item.to_string()));
+        return Err(CompileError::ItemNotFoundInModule(from_module.group.clone(), from_module.module.clone(), item.clone()));
     }
 
     Ok(())
@@ -155,7 +155,7 @@ pub fn import_all(compiler: &mut Compiler, module: &ast::ModuleId,
     Ok(())
 }
 
-fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &str) -> Result<(), CompileError> {
+fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &ast::Name) -> Result<(), CompileError> {
     let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
 
     if module_ctxt.fns.contains_key(name) {
@@ -185,7 +185,7 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &str)
         };
 
         let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
-        module_ctxt.fns.insert(name.to_string(), compiled);
+        module_ctxt.fns.insert(name.clone(), compiled);
     }
 
     let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
@@ -202,7 +202,7 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &str)
             let compiled_fn = other_module_ctxt.fns[name].clone();
             drop(other_module_ctxt);
             let module_ctxt = compiler.modules.get_mut(module).expect("module");
-            module_ctxt.fns.insert(name.to_string(), compiled_fn);
+            module_ctxt.fns.insert(name.clone(), compiled_fn);
             return Ok(());
         }
 
@@ -227,10 +227,10 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &str)
         };
 
         let mut other_module_ctxt = compiler.modules.get_mut(&other_module).expect("module");
-        other_module_ctxt.fns.insert(name.to_string(), compiled.clone());
+        other_module_ctxt.fns.insert(name.clone(), compiled.clone());
         drop(other_module_ctxt);
         let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
-        module_ctxt.fns.insert(name.to_string(), compiled);
+        module_ctxt.fns.insert(name.clone(), compiled);
     }
 
     Ok(())
@@ -247,9 +247,9 @@ pub struct Compiler {
 
 pub struct ModuleContext {
     ast: ast::Module,
-    fn_asts: HashMap<String, ast::Function>,
-    pub fns: HashMap<String, CompiledFunction>,
-    fn_imports: HashMap<String, ast::ModuleId>,
+    fn_asts: HashMap<ast::Name, ast::Function>,
+    pub fns: HashMap<ast::Name, CompiledFunction>,
+    fn_imports: HashMap<ast::Name, ast::ModuleId>,
 }
 
 impl Compiler {

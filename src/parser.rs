@@ -86,18 +86,18 @@ fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
     Ok((input, intrinsic))
 }
 
-fn intrinsic2<'a>(name: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, (String, String)>
+fn intrinsic2<'a>(name_: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, (Name, Name)>
 {
     preceded(
-        tag(name),
+        tag(name_),
         tuple((
             preceded(
                 multispace1,
-                map(identifier, ToString::to_string),
+                name,
             ),
             preceded(
                 multispace1,
-                map(identifier, ToString::to_string),
+                name,
             ),
         ))
     )
@@ -112,7 +112,7 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
 fn set(input: &str) -> IResult<&str, Set> {
     let (input, _) = tag("set")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, name) = name(input)?;
     let (input, _) = multispace1(input)?;
     let (input, type_) = type_(input)?;
     let (input, _) = multispace1(input)?;
@@ -123,14 +123,14 @@ fn set(input: &str) -> IResult<&str, Set> {
     }))
 }
 
-fn name(input: &str) -> IResult<&str, String> {
-    map(identifier, ToString::to_string)(input)
+fn name(input: &str) -> IResult<&str, Name> {
+    map(identifier, |n| Name { inner: n.to_string() })(input)
 }
 
 fn struct_(input: &str) -> IResult<&str, Struct> {
     let (input, _) = tag("struct")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
@@ -171,16 +171,16 @@ fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
 }
 
 fn type_name(input: &str) -> IResult<&str, TypeName> {
-    let (input, name) = identifier(input)?;
-    Ok((input, TypeName(name.to_string())))
+    let (input, name) = name(input)?;
+    Ok((input, TypeName(name)))
 }
 
 fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, group) = name(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, module) = map(identifier, ToString::to_string)(input)?;
+    let (input, module) = name(input)?;
 
     let module = ModuleId {
         group, module,
@@ -193,11 +193,11 @@ fn require(input: &str) -> IResult<&str, Require> {
 fn import(input: &str) -> IResult<&str, Import> {
     let (input, _) = tag("import")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, group) = name(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, module) = map(identifier, ToString::to_string)(input)?;
+    let (input, module) = name(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, item) = map(identifier, ToString::to_string)(input)?;
+    let (input, item) = name(input)?;
 
     let module = ModuleId {
         group, module,
@@ -210,9 +210,9 @@ fn import(input: &str) -> IResult<&str, Import> {
 fn import_all(input: &str) -> IResult<&str, ImportAll> {
     let (input, _) = tag("importall")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, group) = map(identifier, ToString::to_string)(input)?;
+    let (input, group) = name(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, module) = map(identifier, ToString::to_string)(input)?;
+    let (input, module) = name(input)?;
 
     let module = ModuleId {
         group, module,
@@ -225,7 +225,7 @@ fn import_all(input: &str) -> IResult<&str, ImportAll> {
 fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = tag("fn")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
     let (input, args) = separated_list0(separator, argument)(input)?;
@@ -258,7 +258,7 @@ fn argument(input: &str) -> IResult<&str, Argument> {
 fn call(input: &str) -> IResult<&str, Call> {
     let (input, _) = tag("call")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
+    let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
     let (input, args) = separated_list0(separator, expr)(input)?;
@@ -272,8 +272,8 @@ fn call(input: &str) -> IResult<&str, Call> {
 
 /* -------------- */
 
-fn name_type(input: &str) -> IResult<&str, (String, Type)> {
-    let (input, name) = map(identifier, ToString::to_string)(input)?;
+fn name_type(input: &str) -> IResult<&str, (Name, Type)> {
+    let (input, name) = name(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
     let (input, type_) = type_(input)?;

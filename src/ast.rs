@@ -17,7 +17,7 @@ pub enum Expression {
     IntrinsicCall(IntrinsicCall),
     IntrinsicLiteral(IntrinsicLiteral),
     Set(Set),
-    Name(String),
+    Name(Name),
     Struct(Struct),
     Require(Require),
     Import(Import),
@@ -31,7 +31,7 @@ pub enum IntrinsicCall {
     Nop,
     Clear,
     Dump,
-    Int32WrappingAdd(String, String),
+    Int32WrappingAdd(Name, Name),
 }
 
 #[derive(Debug, Clone)]
@@ -39,22 +39,27 @@ pub enum IntrinsicLiteral {
     Int32(String),
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Name {
+    pub inner: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct Set {
-    pub name: String,
+    pub name: Name,
     pub type_: Type,
     pub expr: Box<Expression>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Struct {
-    pub name: String,
+    pub name: Name,
     pub fields: Vec<StructField>,
 }
 
 #[derive(Debug, Clone)]
 pub struct StructField {
-    pub name: String,
+    pub name: Name,
     pub type_: Type,
 }
 
@@ -65,7 +70,7 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone)]
-pub struct TypeName(pub String);
+pub struct TypeName(pub Name);
 
 #[derive(Debug, Clone)]
 pub enum TypeIntrinsic {
@@ -80,14 +85,14 @@ pub struct Require {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ModuleId {
-    pub group: String,
-    pub module: String,
+    pub group: Name,
+    pub module: Name,
 }
 
 #[derive(Debug, Clone)]
 pub struct Import {
     pub module: ModuleId,
-    pub item: String,
+    pub item: Name,
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +102,7 @@ pub struct ImportAll {
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub name: String,
+    pub name: Name,
     pub args: Vec<Argument>,
     pub return_type: Type,
     pub exprs: Vec<Expression>,
@@ -105,15 +110,29 @@ pub struct Function {
 
 #[derive(Debug, Clone)]
 pub struct Argument {
-    pub name: String,
+    pub name: Name,
     pub type_: Type,
 }
 
 #[derive(Debug, Clone)]
 pub struct Call {
-    pub name: String,
+    pub name: Name,
     pub args: Vec<Expression>,
 }
 
 
 
+
+impl std::fmt::Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl From<&'_ str> for Name {
+    fn from(s: &str) -> Name {
+        Name {
+            inner: s.to_string(),
+        }
+    }
+}
