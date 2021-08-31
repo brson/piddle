@@ -1,5 +1,5 @@
-use crate::parser;
-use crate::parser::Expression;
+use crate::ast;
+use crate::ast::Expression;
 use crate::require;
 
 use std::collections::HashMap;
@@ -35,40 +35,40 @@ pub enum CompileError {
     ItemNotFoundInModule(String, String, String),
 }
 
-pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, expr: Expression) -> Result<Code, CompileError> {
+pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: Expression) -> Result<Code, CompileError> {
     match expr {
-        Expression::IntrinsicCall(parser::IntrinsicCall::Nop) => {
+        Expression::IntrinsicCall(ast::IntrinsicCall::Nop) => {
             Ok(Code::Nop)
         },
-        Expression::IntrinsicCall(parser::IntrinsicCall::Clear) => {
+        Expression::IntrinsicCall(ast::IntrinsicCall::Clear) => {
             Ok(Code::Clear)
         }
-        Expression::IntrinsicCall(parser::IntrinsicCall::Dump) => {
+        Expression::IntrinsicCall(ast::IntrinsicCall::Dump) => {
             Ok(Code::Dump)
         }
-        Expression::IntrinsicCall(parser::IntrinsicCall::Int32WrappingAdd(a, b)) => {
+        Expression::IntrinsicCall(ast::IntrinsicCall::Int32WrappingAdd(a, b)) => {
             Ok(Code::IntrinsicCallInt32WrappingAdd(a, b))
         }
-        Expression::Require(parser::Require { module, .. }) => {
+        Expression::Require(ast::Require { module, .. }) => {
             require::load(compiler, &module)?;
             Ok(Code::Nop)
         },
-        Expression::Import(parser::Import { module: from_module, item }) => {
+        Expression::Import(ast::Import { module: from_module, item }) => {
             import(compiler, module, &from_module, &item)?;
             Ok(Code::Nop)
         }
-        Expression::ImportAll(parser::ImportAll { module: from_module }) => {
+        Expression::ImportAll(ast::ImportAll { module: from_module }) => {
             import_all(compiler, module, &from_module)?;
             Ok(Code::Nop)
         }
-        Expression::IntrinsicLiteral(parser::IntrinsicLiteral::Int32(v)) => {
+        Expression::IntrinsicLiteral(ast::IntrinsicLiteral::Int32(v)) => {
             let i = v.parse()?;
             Ok(Code::IntrinsicLiteralInt32(i))
         },
         Expression::Struct(_) => {
             todo!()
         },
-        Expression::Set(parser::Set { name, type_, expr }) => {
+        Expression::Set(ast::Set { name, type_, expr }) => {
             let expr = compile_expression(compiler, module, *expr)?;
             Ok(Code::Set(name, Box::new(expr)))
         },
@@ -97,15 +97,15 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
     }
 }
 
-pub fn import(compiler: &mut Compiler, module: &parser::ModuleId,
-              from_module: &parser::ModuleId, item: &str) -> Result<(), CompileError> {
+pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
+              from_module: &ast::ModuleId, item: &str) -> Result<(), CompileError> {
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
         .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
     let from_module_ast = &from_module_ctxt.ast;
     let mut found_item = None;
     for decl in &from_module_ast.decls {
         match decl {
-            parser::Declaration::Function(parser::Function { name, .. }) => {
+            ast::Declaration::Function(ast::Function { name, .. }) => {
                 if *name == item {
                     found_item = Some(decl.clone());
                     break;
@@ -116,7 +116,7 @@ pub fn import(compiler: &mut Compiler, module: &parser::ModuleId,
     }
     if let Some(decl) = found_item {
         match decl {
-            parser::Declaration::Function(fn_) => {
+            ast::Declaration::Function(fn_) => {
                 let name = fn_.name.clone();
                 from_module_ctxt.fn_asts.insert(name.clone(), fn_);
                 drop(from_module_ctxt);
@@ -132,15 +132,15 @@ pub fn import(compiler: &mut Compiler, module: &parser::ModuleId,
     Ok(())
 }
 
-pub fn import_all(compiler: &mut Compiler, module: &parser::ModuleId,
-                  from_module: &parser::ModuleId) -> Result<(), CompileError> {
+pub fn import_all(compiler: &mut Compiler, module: &ast::ModuleId,
+                  from_module: &ast::ModuleId) -> Result<(), CompileError> {
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
         .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
     let from_module_ast = from_module_ctxt.ast.clone();
     drop(from_module_ctxt);
     for decl in &from_module_ast.decls {
         match decl {
-            parser::Declaration::Function(fn_) => {
+            ast::Declaration::Function(fn_) => {
                 let name = fn_.name.clone();
                 let mut from_module_ctxt = compiler.modules.get_mut(&from_module).expect("module");
                 from_module_ctxt.fn_asts.insert(name.clone(), fn_.clone());
@@ -155,7 +155,7 @@ pub fn import_all(compiler: &mut Compiler, module: &parser::ModuleId,
     Ok(())
 }
 
-fn compile_function(compiler: &mut Compiler, module: &parser::ModuleId, name: &str) -> Result<(), CompileError> {
+fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &str) -> Result<(), CompileError> {
     let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
 
     if module_ctxt.fns.contains_key(name) {
@@ -242,14 +242,14 @@ pub struct CompiledFunction {
 }
 
 pub struct Compiler {
-    pub modules: HashMap<parser::ModuleId, ModuleContext>,
+    pub modules: HashMap<ast::ModuleId, ModuleContext>,
 }
 
 pub struct ModuleContext {
-    ast: parser::Module,
-    fn_asts: HashMap<String, parser::Function>,
+    ast: ast::Module,
+    fn_asts: HashMap<String, ast::Function>,
     pub fns: HashMap<String, CompiledFunction>,
-    fn_imports: HashMap<String, parser::ModuleId>,
+    fn_imports: HashMap<String, ast::ModuleId>,
 }
 
 impl Compiler {
@@ -259,11 +259,11 @@ impl Compiler {
         }
     }
 
-    pub fn have_module(&self, module: &parser::ModuleId) -> bool {
+    pub fn have_module(&self, module: &ast::ModuleId) -> bool {
         self.modules.contains_key(&module)
     }
 
-    pub fn add_module(&mut self, module: &parser::ModuleId, ast: parser::Module) {
+    pub fn add_module(&mut self, module: &ast::ModuleId, ast: ast::Module) {
         assert!(!self.have_module(module));
 
         let ctxt = ModuleContext {

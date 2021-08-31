@@ -1,5 +1,6 @@
 use crate::compiler::Compiler;
 
+use crate::ast;
 use crate::parser;
 
 use std::fs;
@@ -18,7 +19,7 @@ pub enum Error {
     Compile(#[from] Box<crate::compiler::CompileError>),
 }
 
-pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Error> {
+pub fn load(compiler: &mut Compiler, module: &ast::ModuleId) -> Result<(), Error> {
     if compiler.have_module(module) {
         return Ok(());
     }
@@ -30,14 +31,14 @@ pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Er
 
     for decl in decls {
         match decl {
-            parser::Declaration::Require(parser::Require { module }) => {
+            ast::Declaration::Require(ast::Require { module }) => {
                 // fixme recursion
                 load(compiler, &module)?;
             }
-            parser::Declaration::Import(parser::Import { module: from_module, item }) => {
+            ast::Declaration::Import(ast::Import { module: from_module, item }) => {
                 crate::compiler::import(compiler, module, &from_module, &item).map_err(Box::new)?;
             }
-            parser::Declaration::ImportAll(parser::ImportAll { module: from_module }) => {
+            ast::Declaration::ImportAll(ast::ImportAll { module: from_module }) => {
                 crate::compiler::import_all(compiler, module, &from_module).map_err(Box::new)?;
             }
             _ => { /* pass */ }
@@ -47,7 +48,7 @@ pub fn load(compiler: &mut Compiler, module: &parser::ModuleId) -> Result<(), Er
     Ok(())
 }
 
-fn read_ast(module: &parser::ModuleId) -> Result<parser::Module, Error> {
+fn read_ast(module: &ast::ModuleId) -> Result<ast::Module, Error> {
     let group = &module.group;
     let module = &module.module;
     let path = format!("./lib/{}/{}.piddle", group, module);

@@ -34,7 +34,7 @@ use nom::{
     },
 };
 
-pub use crate::ast::*;
+use crate::ast::*;
 
 pub fn module(input: &str) -> IResult<&str, Module> {
     let(input, decls) = many0(delimited(

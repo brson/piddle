@@ -14,14 +14,14 @@ mod interpreter;
 
 mod require;
 
-use parser::Expression;
+use ast::Expression;
 use compiler::{Compiler, Code};
 use interpreter::{Environment, Evaluation};
 
 static REPL_HISTORY_FILE: &str = "repl-history";
 
 lazy_static! {
-    static ref REPL_MODULE: parser::ModuleId = parser::ModuleId {
+    static ref REPL_MODULE: ast::ModuleId = ast::ModuleId {
         group: "local".to_string(),
         module: "main".to_string(),
     };
@@ -29,7 +29,7 @@ lazy_static! {
 
 fn main() -> anyhow::Result<()> {
     let mut compiler = Compiler::new();
-    compiler.add_module(&REPL_MODULE, parser::Module {
+    compiler.add_module(&REPL_MODULE, ast::Module {
         decls: vec![],
     });
 
