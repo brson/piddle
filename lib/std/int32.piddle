@@ -1,0 +1,13 @@
+require std intrinsics
+
+import std intrinsics int32_wrapping_add
+
+struct Int32 {
+    inner: itype int32,
+}
+
+fn wrapping_add(a: Int32, b: Int32) -> Int32 {
+   make Int32 {
+       inner: call int32_wrapping_add(a.inner, b.inner),
+   }
+}
