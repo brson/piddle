@@ -54,55 +54,11 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
             Ok(Code::Nop)
         },
         Expression::Import(parser::Import { module: from_module, item }) => {
-            let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
-                .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
-            let from_module_ast = &from_module_ctxt.ast;
-            let mut found_item = None;
-            for decl in &from_module_ast.decls {
-                match decl {
-                    parser::Declaration::Function(parser::Function { name, .. }) => {
-                        if *name == item {
-                            found_item = Some(decl.clone());
-                            break;
-                        }
-                    }
-                    _ => { }
-                }
-            }
-            if let Some(decl) = found_item {
-                match decl {
-                    parser::Declaration::Function(fn_) => {
-                        let name = fn_.name.clone();
-                        from_module_ctxt.fn_asts.insert(name.clone(), fn_);
-                        drop(from_module_ctxt);
-                        let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
-                        module_ctxt.fn_imports.insert(name, from_module.clone());
-                    }
-                    _ => todo!()
-                }
-            } else {
-                return Err(CompileError::ItemNotFoundInModule(from_module.group.clone(), from_module.module.clone(), item.clone()));
-            }
+            import(compiler, module, &from_module, &item)?;
             Ok(Code::Nop)
         }
         Expression::ImportAll(parser::ImportAll { module: from_module }) => {
-            let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
-                .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
-            let from_module_ast = from_module_ctxt.ast.clone();
-            drop(from_module_ctxt);
-            for decl in &from_module_ast.decls {
-                match decl {
-                    parser::Declaration::Function(fn_) => {
-                        let name = fn_.name.clone();
-                        let mut from_module_ctxt = compiler.modules.get_mut(&from_module).expect("module");
-                        from_module_ctxt.fn_asts.insert(name.clone(), fn_.clone());
-                        drop(from_module_ctxt);
-                        let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
-                        module_ctxt.fn_imports.insert(name, from_module.clone());
-                    }
-                    _ => { /* todo */ }
-                }
-            }
+            import_all(compiler, module, &from_module)?;
             Ok(Code::Nop)
         }
         Expression::IntrinsicLiteral(parser::IntrinsicLiteral::Int32(v)) => {
@@ -139,6 +95,64 @@ pub fn compile_expression(compiler: &mut Compiler, module: &parser::ModuleId, ex
             })
         },
     }
+}
+
+fn import(compiler: &mut Compiler, module: &parser::ModuleId,
+          from_module: &parser::ModuleId, item: &str) -> Result<(), CompileError> {
+    let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
+        .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
+    let from_module_ast = &from_module_ctxt.ast;
+    let mut found_item = None;
+    for decl in &from_module_ast.decls {
+        match decl {
+            parser::Declaration::Function(parser::Function { name, .. }) => {
+                if *name == item {
+                    found_item = Some(decl.clone());
+                    break;
+                }
+            }
+            _ => { }
+        }
+    }
+    if let Some(decl) = found_item {
+        match decl {
+            parser::Declaration::Function(fn_) => {
+                let name = fn_.name.clone();
+                from_module_ctxt.fn_asts.insert(name.clone(), fn_);
+                drop(from_module_ctxt);
+                let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+                module_ctxt.fn_imports.insert(name, from_module.clone());
+            }
+            _ => todo!()
+        }
+    } else {
+        return Err(CompileError::ItemNotFoundInModule(from_module.group.clone(), from_module.module.clone(), item.to_string()));
+    }
+
+    Ok(())
+}
+
+fn import_all(compiler: &mut Compiler, module: &parser::ModuleId,
+              from_module: &parser::ModuleId) -> Result<(), CompileError> {
+    let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
+        .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
+    let from_module_ast = from_module_ctxt.ast.clone();
+    drop(from_module_ctxt);
+    for decl in &from_module_ast.decls {
+        match decl {
+            parser::Declaration::Function(fn_) => {
+                let name = fn_.name.clone();
+                let mut from_module_ctxt = compiler.modules.get_mut(&from_module).expect("module");
+                from_module_ctxt.fn_asts.insert(name.clone(), fn_.clone());
+                drop(from_module_ctxt);
+                let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+                module_ctxt.fn_imports.insert(name, from_module.clone());
+            }
+            _ => { /* todo */ }
+        }
+    }
+
+    Ok(())
 }
 
 fn compile_function(compiler: &mut Compiler, module: &parser::ModuleId, name: &str) -> Result<(), CompileError> {
