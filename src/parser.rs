@@ -63,6 +63,7 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(intrinsic_literal, Expression::IntrinsicLiteral),
         map(set, Expression::Set),
         map(struct_, Expression::Struct),
+        map(make, Expression::Make),
         map(require, Expression::Require),
         map(import, Expression::Import),
         map(import_all, Expression::ImportAll),
@@ -175,6 +176,29 @@ fn type_name(input: &str) -> IResult<&str, TypeName> {
     Ok((input, TypeName(name)))
 }
 
+fn make(input: &str) -> IResult<&str, Make> {
+    let (input, _) = tag("make")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, name) = name(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("{")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, fields) = separated_list0(separator, struct_field_initializer)(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("}")(input)?;
+
+    Ok((input, Make {
+        name, fields
+    }))
+}
+
+fn struct_field_initializer(input: &str) -> IResult<&str, StructFieldInitializer> {
+    let (input, (name, value)) = name_value(input)?;
+    Ok((input, StructFieldInitializer {
+        name, value,
+    }))
+}
+
 fn require(input: &str) -> IResult<&str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
@@ -274,11 +298,22 @@ fn call(input: &str) -> IResult<&str, Call> {
 
 fn name_type(input: &str) -> IResult<&str, (Name, Type)> {
     let (input, name) = name(input)?;
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
     let (input, type_) = type_(input)?;
 
     Ok((input, (name, type_)))
+}
+
+fn name_value(input: &str) -> IResult<&str, (Name, Expression)> {
+    let (input, name) = name(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag(":")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, expr) = expr(input)?;
+
+    Ok((input, (name, expr)))
 }
 
 fn identifier(input: &str) -> IResult<&str, &str> {

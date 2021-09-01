@@ -68,6 +68,9 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
         Expression::Struct(_) => {
             todo!()
         },
+        Expression::Make(_) => {
+            todo!()
+        },
         Expression::Set(ast::Set { name, type_, expr }) => {
             let expr = compile_expression(compiler, module, *expr)?;
             Ok(Code::Set(name, Box::new(expr)))

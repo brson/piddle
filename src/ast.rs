@@ -19,6 +19,7 @@ pub enum Expression {
     Set(Set),
     Name(Name),
     Struct(Struct),
+    Make(Make),
     Require(Require),
     Import(Import),
     ImportAll(ImportAll),
@@ -76,6 +77,18 @@ pub struct TypeName(pub Name);
 pub enum TypeIntrinsic {
     Nil,
     Int32,
+}
+
+#[derive(Debug, Clone)]
+pub struct Make {
+    pub name: Name,
+    pub fields: Vec<StructFieldInitializer>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructFieldInitializer {
+    pub name: Name,
+    pub value: Expression,
 }
 
 #[derive(Debug, Clone)]
