@@ -118,20 +118,20 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
 
     let module_ctxt = &compiler.modules[&REPL_MODULE];
     let tables = interpreter::Tables::<Context> {
-        ctxt: (module_ctxt, compiler),
+        ctxt: (compiler, module_ctxt),
         fns: &module_ctxt.fns,
         dump: &|| compiler::dump(compiler),
         switch_tables: &switch_tables,
     };
 
-    type Context<'b> = (&'b compiler::ModuleContext, &'b compiler::Compiler);
+    type Context<'b> = (&'b compiler::Compiler, &'b compiler::ModuleContext);
 
     fn switch_tables<'compiler, 'b>(tables: &interpreter::Tables<'compiler, Context<'b>>, name: &ast::Name) -> interpreter::Tables<'compiler, Context<'b>> {
-        let module = tables.ctxt.0.fn_imports.get(name);
+        let module = tables.ctxt.1.fn_imports.get(name);
         if let Some(module) = module {
-            let module_ctxt = &tables.ctxt.1.modules[module];
+            let module_ctxt = &tables.ctxt.0.modules[module];
             interpreter::Tables {
-                ctxt: (module_ctxt, tables.ctxt.1),
+                ctxt: (tables.ctxt.0, module_ctxt),
                 fns: &module_ctxt.fns,
                 dump: tables.dump,
                 switch_tables: tables.switch_tables,
