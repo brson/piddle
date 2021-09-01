@@ -131,7 +131,7 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
         } else {
             interpreter::Tables {
                 ctxt: tables.ctxt,
-                fns: &module_ctxt.fns,
+                fns: tables.fns,
                 dump: tables.dump,
                 switch_tables: tables.switch_tables,
             }
