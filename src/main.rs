@@ -115,10 +115,9 @@ fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code,
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
-    type Context<'a> = (&'a compiler::ModuleContext, &'a compiler::Compiler);
-    let switch_tables: &dyn for <'a, 'b> Fn(&interpreter::Tables<'a, Context<'b>>, &ast::Name) -> interpreter::Tables<'a, Context<'b>>
-        = &|tables: &interpreter::Tables<'_, Context>, name: &ast::Name| -> interpreter::Tables<'_, Context>
-    {
+
+    type Context<'b> = (&'b compiler::ModuleContext, &'b compiler::Compiler);
+    fn switch_tables<'compiler, 'b>(tables: &interpreter::Tables<'compiler, Context<'b>>, name: &ast::Name) -> interpreter::Tables<'compiler, Context<'b>> {
         let module = tables.ctxt.0.fn_imports.get(name);
         if let Some(module) = module {
             let module_ctxt = &tables.ctxt.1.modules[module];
@@ -136,13 +135,14 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
                 switch_tables: tables.switch_tables,
             }
         }
-    };
+    }
+
     let module_ctxt = &compiler.modules[&REPL_MODULE];
     let tables = interpreter::Tables::<(&compiler::ModuleContext, &compiler::Compiler)> {
         ctxt: (module_ctxt, compiler),
         fns: &module_ctxt.fns,
         dump: &|| compiler::dump(compiler),
-        switch_tables,
+        switch_tables: &switch_tables,
     };
     Ok(interpreter::run_expression(env, &tables, expr)?)
 }
