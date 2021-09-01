@@ -77,7 +77,6 @@ pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) ->
             Ok(eval)
         }
         Code::Call { name, args } => {
-            let fn_ = &tables.fns[&name];
             let mut eval_args = vec![];
             for arg in args {
                 let eval = run_expression(env, tables, arg)?;
@@ -87,11 +86,13 @@ pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) ->
                 args: eval_args,
                 .. Environment::default()
             };
+
+            let fn_ = &tables.fns[&name];
             let mut final_eval = Evaluation::Nil;
             for code in &fn_.codes {
                 let code = code.clone();
-                todo!(); // fixme need to switch tables
-                final_eval = run_expression(&mut env, tables, code)?;
+                let tables = (tables.switch_tables)(tables, &name);
+                final_eval = run_expression(&mut env, &tables, code)?;
             }
             Ok(final_eval)
         }
