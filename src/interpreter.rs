@@ -15,12 +15,11 @@ pub struct Environment {
     values: HashMap<ast::Name, Evaluation>,
 }
 
-pub struct Tables<'compiler> {
-    pub modules: &'compiler HashMap<ast::ModuleId, compiler::ModuleContext>,
+pub struct Tables<'compiler, Context> {
+    pub ctxt: Context,
     pub fns: &'compiler HashMap<ast::Name, compiler::CompiledFunction>,
-    pub fn_imports: &'compiler HashMap<ast::Name, ast::ModuleId>,
     pub dump: &'compiler dyn Fn(),
-    pub switch_tables: &'compiler dyn for <'a> Fn(&Tables<'a>, &ast::Name) -> Tables<'a>,
+    pub switch_tables: &'compiler dyn for <'a> Fn(&Tables<'a, Context>, &ast::Name) -> Tables<'a, Context>,
 }
 
 #[derive(Debug, Clone)]
@@ -29,7 +28,7 @@ pub enum Evaluation {
     IntrinsicInt32(i32),
 }
 
-pub fn run_expression(env: &mut Environment, tables: &Tables<'_>, expr: Code) -> Result<Evaluation, RunError> {
+pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Context>, expr: Code) -> Result<Evaluation, RunError> {
     match expr {
         Code::Nop => Ok(Evaluation::Nil),
         Code::Clear => Ok(Evaluation::Nil),

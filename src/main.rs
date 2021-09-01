@@ -116,33 +116,30 @@ fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code,
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
     let module_ctxt = &compiler.modules[&REPL_MODULE];
-    let switch_tables: &dyn for <'a> Fn(&interpreter::Tables<'a>, &ast::Name) -> interpreter::Tables<'a>
-        = &|tables: &interpreter::Tables<'_>, name: &ast::Name| -> interpreter::Tables<'_>
+    let switch_tables: &dyn for <'a> Fn(&interpreter::Tables<'a, _>, &ast::Name) -> interpreter::Tables<'a, _>
+        = &|tables: &interpreter::Tables<'_, (&'_ compiler::ModuleContext, &'_ compiler::Compiler)>, name: &ast::Name| -> interpreter::Tables<'_, _>
     {
-        let module = tables.fn_imports.get(name);
+        let module = tables.ctxt.0.fn_imports.get(name);
         if let Some(module) = module {
-            let module_ctxt = &tables.modules[module];
+            let module_ctxt = &tables.ctxt.1.modules[module];
             interpreter::Tables {
-                modules: &tables.modules,
+                ctxt: (module_ctxt, tables.ctxt.1),
                 fns: &module_ctxt.fns,
-                fn_imports: &module_ctxt.fn_imports,
                 dump: tables.dump,
                 switch_tables: tables.switch_tables,
             }
         } else {
             interpreter::Tables {
-                modules: tables.modules,
-                fns: tables.fns,
-                fn_imports: tables.fn_imports,
+                ctxt: tables.ctxt,
+                fns: &module_ctxt.fns,
                 dump: tables.dump,
                 switch_tables: tables.switch_tables,
             }
         }
     };
-    let tables = interpreter::Tables {
-        modules: &compiler.modules,
+    let tables = interpreter::Tables::<(&compiler::ModuleContext, &compiler::Compiler)> {
+        ctxt: (module_ctxt, compiler),
         fns: &module_ctxt.fns,
-        fn_imports: &module_ctxt.fn_imports,
         dump: &|| compiler::dump(compiler),
         switch_tables,
     };
