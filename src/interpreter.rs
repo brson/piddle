@@ -87,10 +87,10 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             };
 
             let fn_ = &tables.fns[&name];
+            let tables = (tables.switch_tables)(tables, &name);
             let mut final_eval = Evaluation::Nil;
             for code in &fn_.codes {
                 let code = code.clone();
-                let tables = (tables.switch_tables)(tables, &name);
                 final_eval = run_expression(&mut env, &tables, code)?;
             }
             Ok(final_eval)
