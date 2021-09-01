@@ -16,8 +16,11 @@ pub struct Environment {
 }
 
 pub struct Tables<'compiler> {
+    pub modules: &'compiler HashMap<ast::ModuleId, compiler::ModuleContext>,
     pub fns: &'compiler HashMap<ast::Name, compiler::CompiledFunction>,
+    pub fn_imports: &'compiler HashMap<ast::Name, ast::ModuleId>,
     pub dump: &'compiler dyn Fn(),
+    pub switch_tables: &'compiler dyn for <'a> Fn(&Tables<'a>, &ast::Name) -> Tables<'a>,
 }
 
 #[derive(Debug, Clone)]

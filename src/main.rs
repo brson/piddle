@@ -115,10 +115,36 @@ fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code,
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
-    let module_ctxt = compiler.modules.get(&REPL_MODULE).expect("module");
+    let module_ctxt = &compiler.modules[&REPL_MODULE];
+    let switch_tables: &dyn for <'a> Fn(&interpreter::Tables<'a>, &ast::Name) -> interpreter::Tables<'a>
+        = &|tables: &interpreter::Tables<'_>, name: &ast::Name| -> interpreter::Tables<'_>
+    {
+        let module = tables.fn_imports.get(name);
+        if let Some(module) = module {
+            let module_ctxt = &tables.modules[module];
+            interpreter::Tables {
+                modules: &tables.modules,
+                fns: &module_ctxt.fns,
+                fn_imports: &module_ctxt.fn_imports,
+                dump: tables.dump,
+                switch_tables: tables.switch_tables,
+            }
+        } else {
+            interpreter::Tables {
+                modules: tables.modules,
+                fns: tables.fns,
+                fn_imports: tables.fn_imports,
+                dump: tables.dump,
+                switch_tables: tables.switch_tables,
+            }
+        }
+    };
     let tables = interpreter::Tables {
+        modules: &compiler.modules,
         fns: &module_ctxt.fns,
+        fn_imports: &module_ctxt.fn_imports,
         dump: &|| compiler::dump(compiler),
+        switch_tables,
     };
     Ok(interpreter::run_expression(env, &tables, expr)?)
 }

@@ -249,7 +249,7 @@ pub struct ModuleContext {
     ast: ast::Module,
     fn_asts: HashMap<ast::Name, ast::Function>,
     pub fns: HashMap<ast::Name, CompiledFunction>,
-    fn_imports: HashMap<ast::Name, ast::ModuleId>,
+    pub fn_imports: HashMap<ast::Name, ast::ModuleId>,
 }
 
 impl Compiler {
