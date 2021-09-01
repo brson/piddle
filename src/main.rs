@@ -115,9 +115,9 @@ fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code,
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
-    let module_ctxt = &compiler.modules[&REPL_MODULE];
-    let switch_tables: &dyn for <'a> Fn(&interpreter::Tables<'a, _>, &ast::Name) -> interpreter::Tables<'a, _>
-        = &|tables: &interpreter::Tables<'_, (&'_ compiler::ModuleContext, &'_ compiler::Compiler)>, name: &ast::Name| -> interpreter::Tables<'_, _>
+    type Context<'a> = (&'a compiler::ModuleContext, &'a compiler::Compiler);
+    let switch_tables: &dyn for <'a, 'b> Fn(&interpreter::Tables<'a, Context<'b>>, &ast::Name) -> interpreter::Tables<'a, Context<'b>>
+        = &|tables: &interpreter::Tables<'_, Context>, name: &ast::Name| -> interpreter::Tables<'_, Context>
     {
         let module = tables.ctxt.0.fn_imports.get(name);
         if let Some(module) = module {
@@ -137,6 +137,7 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
             }
         }
     };
+    let module_ctxt = &compiler.modules[&REPL_MODULE];
     let tables = interpreter::Tables::<(&compiler::ModuleContext, &compiler::Compiler)> {
         ctxt: (module_ctxt, compiler),
         fns: &module_ctxt.fns,
