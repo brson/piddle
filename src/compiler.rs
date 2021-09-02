@@ -21,6 +21,9 @@ pub enum Code {
         args: Vec<Code>,
     },
     Dump,
+    Composite {
+        fields: Vec<(ast::Name, Box<Code>)>,
+    },
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -65,11 +68,16 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
             let i = v.parse()?;
             Ok(Code::IntrinsicLiteralInt32(i))
         },
-        Expression::Struct(_) => {
-            todo!()
+        Expression::Struct(ast::Struct { name, fields }) => {
+            /* pass */
+            Ok(Code::Nop)
         },
-        Expression::Make(_) => {
-            todo!()
+        Expression::Make(ast::Make { name, fields }) => {
+            let fields = fields.into_iter().map(|field| {
+                let expr = compile_expression(compiler, module, field.value)?;
+                Ok((field.name, Box::new(expr)))
+            }).collect::<Result<Vec<_>, CompileError>>()?;
+            Ok(Code::Composite { fields })
         },
         Expression::Set(ast::Set { name, type_, expr }) => {
             let expr = compile_expression(compiler, module, *expr)?;

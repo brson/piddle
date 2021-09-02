@@ -26,6 +26,9 @@ pub struct Tables<'compiler, Context> {
 pub enum Evaluation {
     Nil,
     IntrinsicInt32(i32),
+    Composite {
+        fields: Vec<(ast::Name, Evaluation)>,
+    }
 }
 
 pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Context>, expr: Code) -> Result<Evaluation, RunError> {
@@ -95,6 +98,16 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             }
             Ok(final_eval)
         }
+        Code::Composite { fields } => {
+            let mut evals = vec![];
+            for field in fields {
+                let eval = run_expression(env, &tables, *field.1)?;
+                evals.push((field.0, eval));
+            }
+            Ok(Evaluation::Composite {
+                fields: evals
+            })
+        }
     }
 }
 
@@ -107,6 +120,13 @@ impl std::fmt::Display for Evaluation {
             Evaluation::IntrinsicInt32(i) => {
                 write!(f, "{}", i)
             },
+            Evaluation::Composite { fields } => {
+                writeln!(f, "{{ ");
+                for field in fields {
+                    writeln!(f, "    {}: {}", field.0, field.1);
+                }
+                write!(f, "}}")
+            }
         }
     }
 }
