@@ -1,4 +1,4 @@
-use crate::compiler::{self, Code};
+use crate::compiler::{Code, CompiledFunction};
 
 use crate::ast;
 
@@ -17,7 +17,7 @@ pub struct Environment {
 
 pub struct Tables<'compiler, Context> {
     pub ctxt: Context,
-    pub fns: &'compiler HashMap<ast::Name, compiler::CompiledFunction>,
+    pub fns: &'compiler HashMap<ast::Name, CompiledFunction>,
     pub dump: &'compiler dyn Fn(),
     pub switch_tables: &'compiler dyn for <'a> Fn(&Tables<'a, Context>, &ast::Name) -> Tables<'a, Context>,
 }
