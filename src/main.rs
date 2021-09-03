@@ -6,6 +6,7 @@ use rustyline::Editor;
 use rustyline::error::ReadlineError;
 
 use std::panic::{self, AssertUnwindSafe};
+use std::fs;
 
 mod ast;
 mod parser;
@@ -39,7 +40,23 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn run_script(script_file: &str) -> anyhow::Result<()> {
-    todo!()
+    let mut compiler = Compiler::new();
+    compiler.add_module(&REPL_MODULE, ast::Module {
+        decls: vec![],
+    });
+
+    let mut env = Environment::default();
+
+    let text = fs::read_to_string(script_file)?;
+    let (_, script) = parser::script(&text)
+        .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
+
+    for expr in script.exprs {
+        let code = compile_expression(&mut compiler, expr)?;
+        let _ = run_expression(&mut compiler, &mut env, code)?;
+    }
+
+    Ok(())
 }
 
 fn run_repl() -> anyhow::Result<()> {

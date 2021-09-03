@@ -4,3 +4,4 @@ require std core
 importall std intrinsics
 importall std core
 
+call dump()

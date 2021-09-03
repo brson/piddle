@@ -4,6 +4,11 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone)]
+pub struct Script {
+    pub exprs: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Declaration {
     Struct(Struct),
     Require(Require),

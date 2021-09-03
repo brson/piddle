@@ -47,6 +47,18 @@ pub fn module(input: &str) -> IResult<&str, Module> {
     }))
 }
 
+pub fn script(input: &str) -> IResult<&str, Script> {
+    let (input, exprs) = many0(
+        preceded(
+            multispace0,
+            expr
+        )
+    )(input)?;
+    Ok((input, Script {
+        exprs
+    }))
+}
+
 pub fn declaration(input: &str) -> IResult<&str, Declaration> {
     let (input, decl) = alt((
         map(struct_, Declaration::Struct),
