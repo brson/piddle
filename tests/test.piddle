@@ -1,0 +1,6 @@
+require std intrinsics
+require std core
+
+importall std intrinsics
+importall std core
+

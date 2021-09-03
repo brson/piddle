@@ -28,6 +28,21 @@ lazy_static! {
 }
 
 fn main() -> anyhow::Result<()> {
+
+    let script = std::env::args().skip(1).next();
+
+    if let Some(script) = script {
+        run_script(&script)
+    } else {
+        run_repl()
+    }
+}
+
+fn run_script(script_file: &str) -> anyhow::Result<()> {
+    todo!()
+}
+
+fn run_repl() -> anyhow::Result<()> {
     let mut compiler = Compiler::new();
     compiler.add_module(&REPL_MODULE, ast::Module {
         decls: vec![],
