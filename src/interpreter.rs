@@ -20,6 +20,7 @@ pub struct Tables<'compiler, Context> {
     pub fns: &'compiler HashMap<ast::Name, CompiledFunction>,
     pub dump: &'compiler dyn Fn(),
     pub switch_tables: &'compiler dyn for <'a> Fn(&Tables<'a, Context>, &ast::Name) -> Tables<'a, Context>,
+    pub name: &'compiler dyn Fn(ast::Name) -> &'compiler str,
 }
 
 #[derive(Debug, Clone)]
@@ -40,8 +41,7 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             println!("# runtime");
             println!("## values");
             for (name, value) in &env.values {
-                todo!()
-                //println!("{}: {}", name, value);
+                println!("{}: {}", (tables.name)(*name), value);
             }
             Ok(Evaluation::Nil)
         }
@@ -74,8 +74,7 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             let eval = if let Some(eval) = env.values.get(&name) {
                 eval
             } else {
-                todo!()
-                //panic!("reading empty name {}", name);
+                panic!("reading empty name {}", (tables.name)(name));
             };
             let eval = eval.clone();
             Ok(eval)
@@ -126,7 +125,7 @@ impl std::fmt::Display for Evaluation {
                 writeln!(f, "{{ ");
                 for field in fields {
                     todo!()
-                    //writeln!(f, "    {}: {}", field.0, field.1);
+                    //writeln!(f, "    {}: {}", (tables.name)(field.0), (tables.name)(field.1));
                 }
                 write!(f, "}}")
             }

@@ -159,6 +159,7 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
         fns: &module_ctxt.fns,
         dump: &|| compiler::dump(compiler),
         switch_tables: &switch_tables,
+        name: &|symbol| compiler.name(symbol),
     };
 
     type Context<'b> = (&'b compiler::Compiler, &'b compiler::ModuleContext);
@@ -172,6 +173,7 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
                 fns: &module_ctxt.fns,
                 dump: tables.dump,
                 switch_tables: tables.switch_tables,
+                name: tables.name,
             }
         } else {
             interpreter::Tables {
@@ -179,6 +181,7 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
                 fns: tables.fns,
                 dump: tables.dump,
                 switch_tables: tables.switch_tables,
+                name: tables.name,
             }
         }
     }
