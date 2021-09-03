@@ -126,7 +126,9 @@ fn set(input: &str) -> IResult<&str, Set> {
     let (input, _) = tag("set")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
-    let (input, _) = multispace1(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag(":")(input)?;
+    let (input, _) = multispace0(input)?;
     let (input, type_) = type_(input)?;
     let (input, _) = multispace1(input)?;
     let (input, expr) = map(expr, Box::new)(input)?;
