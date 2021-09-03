@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::ast::Expression;
+use crate::ast::ExpressionKind;
 use crate::require;
 
 use std::collections::HashMap;
@@ -38,62 +38,62 @@ pub enum CompileError {
     ItemNotFoundInModule(ast::Name, ast::Name, ast::Name),
 }
 
-pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: Expression) -> Result<Code, CompileError> {
-    match expr {
-        Expression::IntrinsicCall(ast::IntrinsicCall::Nop) => {
+pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: ast::Expression) -> Result<Code, CompileError> {
+    match expr.expr {
+        ExpressionKind::IntrinsicCall(ast::IntrinsicCall::Nop) => {
             Ok(Code::Nop)
         },
-        Expression::IntrinsicCall(ast::IntrinsicCall::Clear) => {
+        ExpressionKind::IntrinsicCall(ast::IntrinsicCall::Clear) => {
             Ok(Code::Clear)
         }
-        Expression::IntrinsicCall(ast::IntrinsicCall::Dump) => {
+        ExpressionKind::IntrinsicCall(ast::IntrinsicCall::Dump) => {
             Ok(Code::Dump)
         }
-        Expression::IntrinsicCall(ast::IntrinsicCall::Int32WrappingAdd(a, b)) => {
+        ExpressionKind::IntrinsicCall(ast::IntrinsicCall::Int32WrappingAdd(a, b)) => {
             Ok(Code::IntrinsicCallInt32WrappingAdd(a, b))
         }
-        Expression::Require(ast::Require { module, .. }) => {
+        ExpressionKind::Require(ast::Require { module, .. }) => {
             require::load(compiler, &module)?;
             Ok(Code::Nop)
         },
-        Expression::Import(ast::Import { module: from_module, item }) => {
+        ExpressionKind::Import(ast::Import { module: from_module, item }) => {
             import(compiler, module, &from_module, &item)?;
             Ok(Code::Nop)
         }
-        Expression::ImportAll(ast::ImportAll { module: from_module }) => {
+        ExpressionKind::ImportAll(ast::ImportAll { module: from_module }) => {
             import_all(compiler, module, &from_module)?;
             Ok(Code::Nop)
         }
-        Expression::IntrinsicLiteral(ast::IntrinsicLiteral::Int32(v)) => {
+        ExpressionKind::IntrinsicLiteral(ast::IntrinsicLiteral::Int32(v)) => {
             let i = v.parse()?;
             Ok(Code::IntrinsicLiteralInt32(i))
         },
-        Expression::Struct(ast::Struct { name, fields }) => {
+        ExpressionKind::Struct(ast::Struct { name, fields }) => {
             /* pass */
             Ok(Code::Nop)
         },
-        Expression::Make(ast::Make { name, fields }) => {
+        ExpressionKind::Make(ast::Make { name, fields }) => {
             let fields = fields.into_iter().map(|field| {
                 let expr = compile_expression(compiler, module, field.value)?;
                 Ok((field.name, Box::new(expr)))
             }).collect::<Result<Vec<_>, CompileError>>()?;
             Ok(Code::Composite { fields })
         },
-        Expression::Set(ast::Set { name, type_, expr }) => {
+        ExpressionKind::Set(ast::Set { name, type_, expr }) => {
             let expr = compile_expression(compiler, module, *expr)?;
             Ok(Code::Set(name, Box::new(expr)))
         },
-        Expression::Name(name) => {
+        ExpressionKind::Name(name) => {
             Ok(Code::Read(name))
         },
-        Expression::Function(function) => {
+        ExpressionKind::Function(function) => {
             let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
             let name = function.name.clone();
             assert!(!module_ctxt.fn_asts.contains_key(&name));
             module_ctxt.fn_asts.insert(name.clone(), function);
             Ok(Code::Nop)
         },
-        Expression::Call(call) => {
+        ExpressionKind::Call(call) => {
             compile_function(compiler, module, &call.name)?;
             let mut code_args = vec![];
             for arg in call.args {

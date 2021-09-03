@@ -18,7 +18,12 @@ pub enum Declaration {
 }
 
 #[derive(Debug, Clone)]
-pub enum Expression {
+pub struct Expression {
+    pub expr: ExpressionKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum ExpressionKind {
     IntrinsicCall(IntrinsicCall),
     IntrinsicLiteral(IntrinsicLiteral),
     Set(Set),

@@ -71,18 +71,21 @@ pub fn declaration(input: &str) -> IResult<&str, Declaration> {
 
 pub fn expr(input: &str) -> IResult<&str, Expression> {
     let (input, expr) = alt((
-        map(intrinsic_call, Expression::IntrinsicCall),
-        map(intrinsic_literal, Expression::IntrinsicLiteral),
-        map(set, Expression::Set),
-        map(struct_, Expression::Struct),
-        map(make, Expression::Make),
-        map(require, Expression::Require),
-        map(import, Expression::Import),
-        map(import_all, Expression::ImportAll),
-        map(function, Expression::Function),
-        map(call, Expression::Call),
-        map(name, Expression::Name),
+        map(intrinsic_call, ExpressionKind::IntrinsicCall),
+        map(intrinsic_literal, ExpressionKind::IntrinsicLiteral),
+        map(set, ExpressionKind::Set),
+        map(struct_, ExpressionKind::Struct),
+        map(make, ExpressionKind::Make),
+        map(require, ExpressionKind::Require),
+        map(import, ExpressionKind::Import),
+        map(import_all, ExpressionKind::ImportAll),
+        map(function, ExpressionKind::Function),
+        map(call, ExpressionKind::Call),
+        map(name, ExpressionKind::Name),
     ))(input)?;
+    let expr = Expression {
+        expr
+    };
     Ok((input, expr))
 }
 
