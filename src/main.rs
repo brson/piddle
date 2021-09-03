@@ -48,7 +48,7 @@ fn run_script(script_file: &str) -> anyhow::Result<()> {
     let mut env = Environment::default();
 
     let text = fs::read_to_string(script_file)?;
-    let (_, script) = parser::script(&text)
+    let (_, script) = parser::script(&mut compiler.world, &text)
         .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
 
     for expr in script.exprs {
@@ -115,7 +115,7 @@ enum ReadEvalError {
 
 fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
     let res = panic::catch_unwind(AssertUnwindSafe(|| {
-        let expr = read_expression(readline)?;
+        let expr = read_expression(&mut compiler.world, readline)?;
         let expr = compile_expression(compiler, expr)?;
         let expr = run_expression(compiler, env, expr)?;
 
@@ -130,13 +130,13 @@ fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Edit
     }
 }
 
-fn read_expression(readline: &mut Editor::<()>) -> Result<Expression, ReadEvalError> {
+fn read_expression(world: &mut hecs::World, readline: &mut Editor::<()>) -> Result<Expression, ReadEvalError> {
     let line = readline.readline("> ")?;
 
     readline.add_history_entry(line.clone());
     readline.append_history(REPL_HISTORY_FILE)?;
 
-    let (_, expr) = parser::expr(&line)
+    let (_, expr) = parser::expr(world, &line)
         .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
 
     Ok(expr)

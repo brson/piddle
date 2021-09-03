@@ -5,6 +5,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.43"
+hecs = "0.6.3"
 lazy_static = "1.4.0"
 nom = "7.0.0"
 rustyline = "9.0.0"

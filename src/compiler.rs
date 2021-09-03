@@ -247,12 +247,8 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &ast:
     Ok(())
 }
 
-#[derive(Debug, Clone)]
-pub struct CompiledFunction {
-    pub codes: Vec<Code>,
-}
-
 pub struct Compiler {
+    pub world: hecs::World,
     pub modules: HashMap<ast::ModuleId, ModuleContext>,
 }
 
@@ -263,9 +259,15 @@ pub struct ModuleContext {
     pub fn_imports: HashMap<ast::Name, ast::ModuleId>,
 }
 
+#[derive(Debug, Clone)]
+pub struct CompiledFunction {
+    pub codes: Vec<Code>,
+}
+
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler {
+            world: hecs::World::new(),
             modules: HashMap::new(),
         }
     }

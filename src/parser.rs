@@ -35,12 +35,14 @@ use nom::{
     },
 };
 
+use hecs::World;
+
 use crate::ast::*;
 
-pub fn module(input: &str) -> IResult<&str, Module> {
+pub fn module<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Module> {
     let(input, decls) = many0(delimited(
         multispace0,
-        declaration,
+        |input| declaration(world, input),
         multispace0
     ))(input)?;
     Ok((input, Module {
@@ -48,11 +50,11 @@ pub fn module(input: &str) -> IResult<&str, Module> {
     }))
 }
 
-pub fn script(input: &str) -> IResult<&str, Script> {
+pub fn script<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Script> {
     let (input, exprs) = many0(
         preceded(
             multispace0,
-            expr
+            |input| expr(world, input),
         )
     )(input)?;
     Ok((input, Script {
@@ -60,28 +62,30 @@ pub fn script(input: &str) -> IResult<&str, Script> {
     }))
 }
 
-pub fn declaration(input: &str) -> IResult<&str, Declaration> {
+pub fn declaration<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Declaration> {
     let (input, decl) = alt((
         map(struct_, Declaration::Struct),
         map(require, Declaration::Require),
         map(import, Declaration::Import),
-        map(function, Declaration::Function),
+        map(|input| function(world, input), Declaration::Function),
     ))(input)?;
     Ok((input, decl))
 }
 
-pub fn expr(input: &str) -> IResult<&str, Expression> {
+pub fn expr<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Expression> {
+    use std::cell::RefCell;
+    let world = RefCell::new(world);
     let (input, expr) = alt((
         map(intrinsic_call, ExpressionKind::IntrinsicCall),
         map(intrinsic_literal, ExpressionKind::IntrinsicLiteral),
-        map(set, ExpressionKind::Set),
+        map(|input| set(*world.borrow_mut(), input), ExpressionKind::Set),
         map(struct_, ExpressionKind::Struct),
-        map(make, ExpressionKind::Make),
+        map(|input| make(*world.borrow_mut(), input), ExpressionKind::Make),
         map(require, ExpressionKind::Require),
         map(import, ExpressionKind::Import),
         map(import_all, ExpressionKind::ImportAll),
-        map(function, ExpressionKind::Function),
-        map(call, ExpressionKind::Call),
+        map(|input| function(*world.borrow_mut(), input), ExpressionKind::Function),
+        map(|input| call(*world.borrow_mut(), input), ExpressionKind::Call),
         map(name, ExpressionKind::Name),
     ))(input)?;
 
@@ -137,7 +141,7 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
     Ok((input, lit))
 }
 
-fn set(input: &str) -> IResult<&str, Set> {
+fn set<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Set> {
     let (input, _) = tag("set")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
@@ -146,7 +150,7 @@ fn set(input: &str) -> IResult<&str, Set> {
     let (input, _) = multispace0(input)?;
     let (input, type_) = type_(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, expr) = map(expr, Box::new)(input)?;
+    let (input, expr) = map(|input| expr(world, input), Box::new)(input)?;
 
     Ok((input, Set {
         name, type_, expr,
@@ -205,14 +209,14 @@ fn type_name(input: &str) -> IResult<&str, TypeName> {
     Ok((input, TypeName(name)))
 }
 
-fn make(input: &str) -> IResult<&str, Make> {
+fn make<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Make> {
     let (input, _) = tag("make")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, fields) = separated_list0(separator, struct_field_initializer)(input)?;
+    let (input, fields) = separated_list0(separator, |input| struct_field_initializer(world, input))(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -221,8 +225,8 @@ fn make(input: &str) -> IResult<&str, Make> {
     }))
 }
 
-fn struct_field_initializer(input: &str) -> IResult<&str, StructFieldInitializer> {
-    let (input, (name, value)) = name_value(input)?;
+fn struct_field_initializer<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, StructFieldInitializer> {
+    let (input, (name, value)) = name_value(world, input)?;
     Ok((input, StructFieldInitializer {
         name, value,
     }))
@@ -275,7 +279,7 @@ fn import_all(input: &str) -> IResult<&str, ImportAll> {
     }))
 }
 
-fn function(input: &str) -> IResult<&str, Function> {
+fn function<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Function> {
     let (input, _) = tag("fn")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
@@ -292,7 +296,7 @@ fn function(input: &str) -> IResult<&str, Function> {
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, exprs) = separated_list0(separator, expr)(input)?;
+    let (input, exprs) = separated_list0(separator, |input| expr(world, input))(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -308,13 +312,13 @@ fn argument(input: &str) -> IResult<&str, Argument> {
     }))
 }
 
-fn call(input: &str) -> IResult<&str, Call> {
+fn call<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Call> {
     let (input, _) = tag("call")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
-    let (input, args) = separated_list0(separator, expr)(input)?;
+    let (input, args) = separated_list0(separator, |input| expr(world, input))(input)?;
     let (input, _) = tag(")")(input)?;
 
     Ok((input, Call {
@@ -335,12 +339,12 @@ fn name_type(input: &str) -> IResult<&str, (Name, Type)> {
     Ok((input, (name, type_)))
 }
 
-fn name_value(input: &str) -> IResult<&str, (Name, Expression)> {
+fn name_value<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, (Name, Expression)> {
     let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, expr) = expr(input)?;
+    let (input, expr) = expr(world, input)?;
 
     Ok((input, (name, expr)))
 }
