@@ -19,6 +19,7 @@ use nom::{
         map,
         value,
         recognize,
+        success,
     },
     multi::{
         many0,
@@ -83,8 +84,19 @@ pub fn expr(input: &str) -> IResult<&str, Expression> {
         map(call, ExpressionKind::Call),
         map(name, ExpressionKind::Name),
     ))(input)?;
+
+    let (input, _) = multispace0(input)?;
+
+    let (input, type_) = alt((
+        map(preceded(
+            pair(tag(":"), multispace0),
+            type_,
+        ), Some),
+        map(tag(""), |_| None),
+    ))(input)?;
+
     let expr = Expression {
-        expr
+        expr, type_: None,
     };
     Ok((input, expr))
 }

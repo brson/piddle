@@ -20,6 +20,7 @@ pub enum Declaration {
 #[derive(Debug, Clone)]
 pub struct Expression {
     pub expr: ExpressionKind,
+    pub type_: Option<Type>,
 }
 
 #[derive(Debug, Clone)]
