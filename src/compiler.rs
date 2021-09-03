@@ -248,6 +248,7 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &ast:
 }
 
 pub struct Compiler {
+    pub strings: string_interner::StringInterner,
     pub world: hecs::World,
     pub modules: HashMap<ast::ModuleId, ModuleContext>,
 }
@@ -267,6 +268,7 @@ pub struct CompiledFunction {
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler {
+            strings: string_interner::StringInterner::new(),
             world: hecs::World::new(),
             modules: HashMap::new(),
         }

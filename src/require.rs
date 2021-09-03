@@ -24,7 +24,11 @@ pub fn load(compiler: &mut Compiler, module: &ast::ModuleId) -> Result<(), Error
         return Ok(());
     }
 
-    let ast = read_ast(&mut compiler.world, module)?;
+    let mut parser_ctxt = parser::Context {
+        strings: &mut compiler.strings,
+        world: &mut compiler.world,
+    };
+    let ast = read_ast(&mut parser_ctxt, module)?;
     let decls = ast.decls.clone();
 
     compiler.add_module(module, ast);
@@ -48,7 +52,7 @@ pub fn load(compiler: &mut Compiler, module: &ast::ModuleId) -> Result<(), Error
     Ok(())
 }
 
-fn read_ast(world: &mut hecs::World, module: &ast::ModuleId) -> Result<ast::Module, Error> {
+fn read_ast(ctxt: &mut parser::Context, module: &ast::ModuleId) -> Result<ast::Module, Error> {
     let group = &module.group;
     let module = &module.module;
     let path = format!("./lib/{}/{}.piddle", group, module);
@@ -60,7 +64,7 @@ fn read_ast(world: &mut hecs::World, module: &ast::ModuleId) -> Result<ast::Modu
 
     let text = fs::read_to_string(&path)?;
 
-    let (_, module) = parser::module(world, &text)
+    let (_, module) = parser::module(ctxt, &text)
         .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
 
     Ok(module)

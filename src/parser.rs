@@ -42,14 +42,14 @@ use string_interner::DefaultSymbol as Symbol;
 use crate::ast::*;
 
 pub struct Context<'c> {
-    pub world: &'c mut World,
     pub strings: &'c mut StringInterner,
+    pub world: &'c mut World,
 }
 
-pub fn module<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Module> {
+pub fn module<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Module> {
     let(input, decls) = many0(delimited(
         multispace0,
-        |input| declaration(world, input),
+        |input| declaration(ctxt, input),
         multispace0
     ))(input)?;
     Ok((input, Module {
@@ -57,11 +57,11 @@ pub fn module<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Module>
     }))
 }
 
-pub fn script<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Script> {
+pub fn script<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Script> {
     let (input, exprs) = many0(
         preceded(
             multispace0,
-            |input| expr(world, input),
+            |input| expr(ctxt, input),
         )
     )(input)?;
     Ok((input, Script {
@@ -69,30 +69,30 @@ pub fn script<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Script>
     }))
 }
 
-pub fn declaration<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Declaration> {
+pub fn declaration<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Declaration> {
     let (input, decl) = alt((
         map(struct_, Declaration::Struct),
         map(require, Declaration::Require),
         map(import, Declaration::Import),
-        map(|input| function(world, input), Declaration::Function),
+        map(|input| function(ctxt, input), Declaration::Function),
     ))(input)?;
     Ok((input, decl))
 }
 
-pub fn expr<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Expression> {
+pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Expression> {
     use std::cell::RefCell;
-    let world = RefCell::new(world);
+    let ctxt = RefCell::new(ctxt);
     let (input, expr) = alt((
         map(intrinsic_call, ExpressionKind::IntrinsicCall),
         map(intrinsic_literal, ExpressionKind::IntrinsicLiteral),
-        map(|input| set(*world.borrow_mut(), input), ExpressionKind::Set),
+        map(|input| set(*ctxt.borrow_mut(), input), ExpressionKind::Set),
         map(struct_, ExpressionKind::Struct),
-        map(|input| make(*world.borrow_mut(), input), ExpressionKind::Make),
+        map(|input| make(*ctxt.borrow_mut(), input), ExpressionKind::Make),
         map(require, ExpressionKind::Require),
         map(import, ExpressionKind::Import),
         map(import_all, ExpressionKind::ImportAll),
-        map(|input| function(*world.borrow_mut(), input), ExpressionKind::Function),
-        map(|input| call(*world.borrow_mut(), input), ExpressionKind::Call),
+        map(|input| function(*ctxt.borrow_mut(), input), ExpressionKind::Function),
+        map(|input| call(*ctxt.borrow_mut(), input), ExpressionKind::Call),
         map(name, ExpressionKind::Name),
     ))(input)?;
 
@@ -148,7 +148,7 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
     Ok((input, lit))
 }
 
-fn set<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Set> {
+fn set<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Set> {
     let (input, _) = tag("set")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
@@ -157,7 +157,7 @@ fn set<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Set> {
     let (input, _) = multispace0(input)?;
     let (input, type_) = type_(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, expr) = map(|input| expr(world, input), Box::new)(input)?;
+    let (input, expr) = map(|input| expr(ctxt, input), Box::new)(input)?;
 
     Ok((input, Set {
         name, type_, expr,
@@ -216,14 +216,14 @@ fn type_name(input: &str) -> IResult<&str, TypeName> {
     Ok((input, TypeName(name)))
 }
 
-fn make<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Make> {
+fn make<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Make> {
     let (input, _) = tag("make")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, fields) = separated_list0(separator, |input| struct_field_initializer(world, input))(input)?;
+    let (input, fields) = separated_list0(separator, |input| struct_field_initializer(ctxt, input))(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -232,8 +232,8 @@ fn make<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Make> {
     }))
 }
 
-fn struct_field_initializer<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, StructFieldInitializer> {
-    let (input, (name, value)) = name_value(world, input)?;
+fn struct_field_initializer<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, StructFieldInitializer> {
+    let (input, (name, value)) = name_value(ctxt, input)?;
     Ok((input, StructFieldInitializer {
         name, value,
     }))
@@ -286,7 +286,7 @@ fn import_all(input: &str) -> IResult<&str, ImportAll> {
     }))
 }
 
-fn function<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Function> {
+fn function<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Function> {
     let (input, _) = tag("fn")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
@@ -303,7 +303,7 @@ fn function<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Function>
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, exprs) = separated_list0(separator, |input| expr(world, input))(input)?;
+    let (input, exprs) = separated_list0(separator, |input| expr(ctxt, input))(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -319,13 +319,13 @@ fn argument(input: &str) -> IResult<&str, Argument> {
     }))
 }
 
-fn call<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Call> {
+fn call<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Call> {
     let (input, _) = tag("call")(input)?;
     let (input, _) = multispace1(input)?;
     let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
-    let (input, args) = separated_list0(separator, |input| expr(world, input))(input)?;
+    let (input, args) = separated_list0(separator, |input| expr(ctxt, input))(input)?;
     let (input, _) = tag(")")(input)?;
 
     Ok((input, Call {
@@ -346,12 +346,12 @@ fn name_type(input: &str) -> IResult<&str, (Name, Type)> {
     Ok((input, (name, type_)))
 }
 
-fn name_value<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, (Name, Expression)> {
+fn name_value<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, (Name, Expression)> {
     let (input, name) = name(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, expr) = expr(world, input)?;
+    let (input, expr) = expr(ctxt, input)?;
 
     Ok((input, (name, expr)))
 }
