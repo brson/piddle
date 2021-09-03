@@ -33,9 +33,9 @@ pub enum CompileError {
     #[error("loading module")]
     Require(#[from] require::Error),
     #[error("unknown module in import, {0}/{1}")]
-    UnknownImportModule(ast::Name, ast::Name),
+    UnknownImportModule(String, String),
     #[error("item {2} not found in module {0}/{1}")]
-    ItemNotFoundInModule(ast::Name, ast::Name, ast::Name),
+    ItemNotFoundInModule(String, String, String),
 }
 
 pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: ast::Expression) -> Result<Code, CompileError> {
@@ -110,8 +110,12 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
 
 pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
               from_module: &ast::ModuleId, item: &ast::Name) -> Result<(), CompileError> {
+    let strings = &compiler.strings;
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
-        .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
+        .ok_or_else(|| CompileError::UnknownImportModule(
+            strings.resolve(from_module.group.symbol).expect("").to_string(),
+            strings.resolve(from_module.module.symbol).expect("").to_string(),
+        ))?;
     let from_module_ast = &from_module_ctxt.ast;
     let mut found_item = None;
     for decl in &from_module_ast.decls {
@@ -137,7 +141,11 @@ pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
             _ => todo!()
         }
     } else {
-        return Err(CompileError::ItemNotFoundInModule(from_module.group.clone(), from_module.module.clone(), item.clone()));
+        return Err(CompileError::ItemNotFoundInModule(
+            compiler.name(from_module.group).to_string(),
+            compiler.name(from_module.module).to_string(),
+            compiler.name(*item).to_string(),
+        ));
     }
 
     Ok(())
@@ -145,8 +153,12 @@ pub fn import(compiler: &mut Compiler, module: &ast::ModuleId,
 
 pub fn import_all(compiler: &mut Compiler, module: &ast::ModuleId,
                   from_module: &ast::ModuleId) -> Result<(), CompileError> {
+    let strings = &compiler.strings;
     let mut from_module_ctxt = compiler.modules.get_mut(&from_module)
-        .ok_or_else(|| CompileError::UnknownImportModule(from_module.group.clone(), from_module.module.clone()))?;
+        .ok_or_else(|| CompileError::UnknownImportModule(
+            strings.resolve(from_module.group.symbol).expect("").to_string(),
+            strings.resolve(from_module.module.symbol).expect("").to_string(),
+        ))?;
     let from_module_ast = from_module_ctxt.ast.clone();
     drop(from_module_ctxt);
     for decl in &from_module_ast.decls {
@@ -290,21 +302,25 @@ impl Compiler {
 
         self.modules.insert(module.clone(), ctxt);
     }
+
+    pub fn name(&self, name: ast::Name) -> &str {
+        self.strings.resolve(name.symbol).expect("name")
+    }
 }
 
 pub fn dump(compiler: &Compiler) {
     println!("# compiler");
     println!("## modules");
     for (module, context) in &compiler.modules {
-        println!("- {}/{}", module.group, module.module);
+        println!("- {}/{}", compiler.name(module.group), compiler.name(module.module));
         if !context.fn_asts.is_empty() {
             println!("  - local functions");
             for name in context.fn_asts.keys() {
                 let compiled = context.fns.contains_key(name);
                 if compiled {
-                    println!("    - {} (compiled)", name);
+                    println!("    - {} (compiled)", compiler.name(*name));
                 } else {
-                    println!("    - {}", name);
+                    println!("    - {}", compiler.name(*name));
                 }
             }
         }
@@ -313,9 +329,11 @@ pub fn dump(compiler: &Compiler) {
             for (name, module) in &context.fn_imports {
                 let compiled = context.fns.contains_key(name);
                 if compiled {
-                    println!("    - {} (from {}/{}) (compiled)", name, module.group, module.module);
+                    println!("    - {} (from {}/{}) (compiled)",
+                             compiler.name(*name), compiler.name(module.group), compiler.name(module.module));
                 } else {
-                    println!("    - {} (from {}/{})", name, module.group, module.module);
+                    println!("    - {} (from {}/{})",
+                             compiler.name(*name), compiler.name(module.group), compiler.name(module.module));
                 }
             }
         }

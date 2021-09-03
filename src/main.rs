@@ -21,13 +21,6 @@ use interpreter::{Environment, Evaluation};
 
 static REPL_HISTORY_FILE: &str = "repl-history";
 
-lazy_static! {
-    static ref REPL_MODULE: ast::ModuleId = ast::ModuleId {
-        group: ast::Name::from("local"),
-        module: ast::Name::from("main"),
-    };
-}
-
 fn main() -> anyhow::Result<()> {
 
     let script = std::env::args().skip(1).next();
@@ -41,7 +34,8 @@ fn main() -> anyhow::Result<()> {
 
 fn run_script(script_file: &str) -> anyhow::Result<()> {
     let mut compiler = Compiler::new();
-    compiler.add_module(&REPL_MODULE, ast::Module {
+    let repl_module = repl_module(&mut compiler.strings);
+    compiler.add_module(&repl_module, ast::Module {
         decls: vec![],
     });
 
@@ -65,7 +59,8 @@ fn run_script(script_file: &str) -> anyhow::Result<()> {
 
 fn run_repl() -> anyhow::Result<()> {
     let mut compiler = Compiler::new();
-    compiler.add_module(&REPL_MODULE, ast::Module {
+    let repl_module = repl_module(&mut compiler.strings);
+    compiler.add_module(&repl_module, ast::Module {
         decls: vec![],
     });
 
@@ -151,12 +146,14 @@ fn read_expression(compiler: &mut Compiler, readline: &mut Editor::<()>) -> Resu
 }
 
 fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, ReadEvalError> {
-    Ok(compiler::compile_expression(compiler, &REPL_MODULE, expr)?)
+    let repl_module = repl_module(&mut compiler.strings);
+    Ok(compiler::compile_expression(compiler, &repl_module, expr)?)
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
 
-    let module_ctxt = &compiler.modules[&REPL_MODULE];
+    let repl_module = repl_module(&mut compiler.strings);
+    let module_ctxt = &compiler.modules[&repl_module];
     let tables = interpreter::Tables::<Context> {
         ctxt: (compiler, module_ctxt),
         fns: &module_ctxt.fns,
@@ -188,3 +185,11 @@ fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) ->
 
     Ok(interpreter::run_expression(env, &tables, expr)?)
 }
+
+fn repl_module(strings: &mut string_interner::StringInterner) -> ast::ModuleId {
+    ast::ModuleId {
+        group: ast::Name::from(strings.get_or_intern("local")),
+        module: ast::Name::from(strings.get_or_intern("main")),
+    }
+}
+

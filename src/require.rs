@@ -53,8 +53,8 @@ pub fn load(compiler: &mut Compiler, module: &ast::ModuleId) -> Result<(), Error
 }
 
 fn read_ast(ctxt: &mut parser::Context, module: &ast::ModuleId) -> Result<ast::Module, Error> {
-    let group = &module.group;
-    let module = &module.module;
+    let group = ctxt.strings.resolve(module.group.symbol).expect("");
+    let module = ctxt.strings.resolve(module.module.symbol).expect("");
     let path = format!("./lib/{}/{}.piddle", group, module);
     let path = PathBuf::from(path);
     

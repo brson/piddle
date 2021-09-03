@@ -51,9 +51,9 @@ pub enum IntrinsicLiteral {
     Int32(String),
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Name {
-    pub inner: String,
+    pub symbol: string_interner::DefaultSymbol,
 }
 
 #[derive(Debug, Clone)]
@@ -144,19 +144,10 @@ pub struct Call {
     pub args: Vec<Expression>,
 }
 
-
-
-
-impl std::fmt::Display for Name {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.inner)
-    }
-}
-
-impl From<&'_ str> for Name {
-    fn from(s: &str) -> Name {
+impl From<string_interner::DefaultSymbol> for Name {
+    fn from(s: string_interner::DefaultSymbol) -> Name {
         Name {
-            inner: s.to_string(),
+            symbol: s,
         }
     }
 }

@@ -168,7 +168,10 @@ fn set<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Set> {
 }
 
 fn name<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Name> {
-    map(identifier, |n| Name { inner: n.to_string() })(input)
+    map(identifier, |n| {
+        let symbol = ctxt.strings.get_or_intern(n);
+        Name { symbol }
+    })(input)
 }
 
 fn struct_<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Struct> {

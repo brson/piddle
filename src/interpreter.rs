@@ -40,7 +40,8 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             println!("# runtime");
             println!("## values");
             for (name, value) in &env.values {
-                println!("{}: {}", name, value);
+                todo!()
+                //println!("{}: {}", name, value);
             }
             Ok(Evaluation::Nil)
         }
@@ -73,7 +74,8 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             let eval = if let Some(eval) = env.values.get(&name) {
                 eval
             } else {
-                panic!("reading empty name {}", name);
+                todo!()
+                //panic!("reading empty name {}", name);
             };
             let eval = eval.clone();
             Ok(eval)
@@ -123,7 +125,8 @@ impl std::fmt::Display for Evaluation {
             Evaluation::Composite { fields } => {
                 writeln!(f, "{{ ");
                 for field in fields {
-                    writeln!(f, "    {}: {}", field.0, field.1);
+                    todo!()
+                    //writeln!(f, "    {}: {}", field.0, field.1);
                 }
                 write!(f, "}}")
             }
