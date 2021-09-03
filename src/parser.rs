@@ -36,8 +36,15 @@ use nom::{
 };
 
 use hecs::World;
+use string_interner::StringInterner;
+use string_interner::DefaultSymbol as Symbol;
 
 use crate::ast::*;
+
+pub struct Context<'c> {
+    pub world: &'c mut World,
+    pub strings: &'c mut StringInterner,
+}
 
 pub fn module<'i>(world: &mut World, input: &'i str) -> IResult<&'i str, Module> {
     let(input, decls) = many0(delimited(
