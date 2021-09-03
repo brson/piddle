@@ -35,6 +35,7 @@ use nom::{
     },
 };
 
+use std::cell::RefCell;
 use hecs::World;
 use string_interner::StringInterner;
 use string_interner::DefaultSymbol as Symbol;
@@ -70,30 +71,30 @@ pub fn script<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Script
 }
 
 pub fn declaration<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Declaration> {
+    let ctxt = RefCell::new(ctxt);
     let (input, decl) = alt((
-        map(struct_, Declaration::Struct),
-        map(require, Declaration::Require),
-        map(import, Declaration::Import),
-        map(|input| function(ctxt, input), Declaration::Function),
+        map(|input| struct_(*ctxt.borrow_mut(), input), Declaration::Struct),
+        map(|input| require(*ctxt.borrow_mut(), input), Declaration::Require),
+        map(|input| import(*ctxt.borrow_mut(), input), Declaration::Import),
+        map(|input| function(*ctxt.borrow_mut(), input), Declaration::Function),
     ))(input)?;
     Ok((input, decl))
 }
 
 pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Expression> {
-    use std::cell::RefCell;
     let ctxt = RefCell::new(ctxt);
     let (input, expr) = alt((
-        map(intrinsic_call, ExpressionKind::IntrinsicCall),
+        map(|input| intrinsic_call(*ctxt.borrow_mut(), input), ExpressionKind::IntrinsicCall),
         map(intrinsic_literal, ExpressionKind::IntrinsicLiteral),
         map(|input| set(*ctxt.borrow_mut(), input), ExpressionKind::Set),
-        map(struct_, ExpressionKind::Struct),
+        map(|input| struct_(*ctxt.borrow_mut(), input), ExpressionKind::Struct),
         map(|input| make(*ctxt.borrow_mut(), input), ExpressionKind::Make),
-        map(require, ExpressionKind::Require),
-        map(import, ExpressionKind::Import),
-        map(import_all, ExpressionKind::ImportAll),
+        map(|input| require(*ctxt.borrow_mut(), input), ExpressionKind::Require),
+        map(|input| import(*ctxt.borrow_mut(), input), ExpressionKind::Import),
+        map(|input| import_all(*ctxt.borrow_mut(), input), ExpressionKind::ImportAll),
         map(|input| function(*ctxt.borrow_mut(), input), ExpressionKind::Function),
         map(|input| call(*ctxt.borrow_mut(), input), ExpressionKind::Call),
-        map(name, ExpressionKind::Name),
+        map(|input| name(*ctxt.borrow_mut(), input), ExpressionKind::Name),
     ))(input)?;
 
     let (input, _) = multispace0(input)?;
@@ -101,7 +102,7 @@ pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Expressi
     let (input, type_) = alt((
         map(preceded(
             pair(tag(":"), multispace0),
-            type_,
+            |input| type_(*ctxt.borrow_mut(), input),
         ), Some),
         map(tag(""), |_| None),
     ))(input)?;
@@ -112,34 +113,36 @@ pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Expressi
     Ok((input, expr))
 }
 
-fn intrinsic_call(input: &str) -> IResult<&str, IntrinsicCall> {
+fn intrinsic_call<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, IntrinsicCall> {
     let (input, _) = tag("icall")(input)?;
     let (input, _) = multispace1(input)?;
     let (input , intrinsic) = alt((
         value(IntrinsicCall::Nop, tag("nop")),
         value(IntrinsicCall::Clear, tag("clear")),
         value(IntrinsicCall::Dump, tag("dump")),
-        map(intrinsic2("int32_wrapping_add"), |(a, b)| IntrinsicCall::Int32WrappingAdd(a, b)),
+        map(|input| intrinsic2(ctxt, "int32_wrapping_add", input), |(a, b)| IntrinsicCall::Int32WrappingAdd(a, b)),
     ))(input)?;
 
     Ok((input, intrinsic))
 }
 
-fn intrinsic2<'a>(name_: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str, (Name, Name)>
-{
-    preceded(
+fn intrinsic2<'i>(ctxt: &mut Context, name_: &str, input: &'i str) -> IResult<&'i str, (Name, Name)> {
+    let ctxt = RefCell::new(ctxt);
+    let (input, names) = preceded(
         tag(name_),
         tuple((
             preceded(
                 multispace1,
-                name,
+                |input| name(*ctxt.borrow_mut(), input),
             ),
             preceded(
                 multispace1,
-                name,
+                |input| name(*ctxt.borrow_mut(), input),
             ),
         ))
-    )
+    )(input)?;
+
+    Ok((input, names))
 }
 
 fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
@@ -151,11 +154,11 @@ fn intrinsic_literal(input: &str) -> IResult<&str, IntrinsicLiteral> {
 fn set<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Set> {
     let (input, _) = tag("set")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = name(input)?;
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, type_) = type_(input)?;
+    let (input, type_) = type_(ctxt, input)?;
     let (input, _) = multispace1(input)?;
     let (input, expr) = map(|input| expr(ctxt, input), Box::new)(input)?;
 
@@ -164,18 +167,18 @@ fn set<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Set> {
     }))
 }
 
-fn name(input: &str) -> IResult<&str, Name> {
+fn name<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Name> {
     map(identifier, |n| Name { inner: n.to_string() })(input)
 }
 
-fn struct_(input: &str) -> IResult<&str, Struct> {
+fn struct_<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Struct> {
     let (input, _) = tag("struct")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = name(input)?;
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, fields) = separated_list0(separator, struct_field)(input)?;
+    let (input, fields) = separated_list0(separator, |input| struct_field(ctxt, input))(input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("}")(input)?;
 
@@ -184,17 +187,17 @@ fn struct_(input: &str) -> IResult<&str, Struct> {
     }))
 }
 
-fn struct_field(input: &str) -> IResult<&str, StructField> {
-    let (input, (name, type_)) = name_type(input)?;
+fn struct_field<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, StructField> {
+    let (input, (name, type_)) = name_type(ctxt, input)?;
     Ok((input, StructField {
         name, type_,
     }))
 }
 
-fn type_(input: &str) -> IResult<&str, Type> {
+fn type_<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Type> {
     let (input, type_) = alt((
         map(type_intrinsic, Type::Intrinsic),
-        map(type_name, Type::Name),
+        map(|input| type_name(ctxt, input), Type::Name),
     ))(input)?;
 
     Ok((input, type_))
@@ -211,15 +214,15 @@ fn type_intrinsic(input: &str) -> IResult<&str, TypeIntrinsic> {
     Ok((input, intrinsic))
 }
 
-fn type_name(input: &str) -> IResult<&str, TypeName> {
-    let (input, name) = name(input)?;
+fn type_name<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, TypeName> {
+    let (input, name) = name(ctxt, input)?;
     Ok((input, TypeName(name)))
 }
 
 fn make<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Make> {
     let (input, _) = tag("make")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = name(input)?;
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
     let (input, _) = multispace0(input)?;
@@ -239,12 +242,12 @@ fn struct_field_initializer<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&
     }))
 }
 
-fn require(input: &str) -> IResult<&str, Require> {
+fn require<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Require> {
     let (input, _) = tag("require")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, group) = name(input)?;
+    let (input, group) = name(ctxt, input)?;
     let (input, _) = multispace1(input)?;
-    let (input, module) = name(input)?;
+    let (input, module) = name(ctxt, input)?;
 
     let module = ModuleId {
         group, module,
@@ -254,14 +257,14 @@ fn require(input: &str) -> IResult<&str, Require> {
     }))
 }
 
-fn import(input: &str) -> IResult<&str, Import> {
+fn import<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Import> {
     let (input, _) = tag("import")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, group) = name(input)?;
+    let (input, group) = name(ctxt, input)?;
     let (input, _) = multispace1(input)?;
-    let (input, module) = name(input)?;
+    let (input, module) = name(ctxt, input)?;
     let (input, _) = multispace1(input)?;
-    let (input, item) = name(input)?;
+    let (input, item) = name(ctxt, input)?;
 
     let module = ModuleId {
         group, module,
@@ -271,12 +274,12 @@ fn import(input: &str) -> IResult<&str, Import> {
     }))
 }
 
-fn import_all(input: &str) -> IResult<&str, ImportAll> {
+fn import_all<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, ImportAll> {
     let (input, _) = tag("importall")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, group) = name(input)?;
+    let (input, group) = name(ctxt, input)?;
     let (input, _) = multispace1(input)?;
-    let (input, module) = name(input)?;
+    let (input, module) = name(ctxt, input)?;
 
     let module = ModuleId {
         group, module,
@@ -289,16 +292,16 @@ fn import_all(input: &str) -> IResult<&str, ImportAll> {
 fn function<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Function> {
     let (input, _) = tag("fn")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = name(input)?;
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
-    let (input, args) = separated_list0(separator, argument)(input)?;
+    let (input, args) = separated_list0(separator, |input| argument(ctxt, input))(input)?;
     let (input, _) = tag(")")(input)?;
 
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("->")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, return_type) = type_(input)?;
+    let (input, return_type) = type_(ctxt, input)?;
 
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("{")(input)?;
@@ -312,8 +315,8 @@ fn function<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Function
     }))
 }
 
-fn argument(input: &str) -> IResult<&str, Argument> {
-    let (input, (name, type_)) = name_type(input)?;
+fn argument<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Argument> {
+    let (input, (name, type_)) = name_type(ctxt, input)?;
     Ok((input, Argument {
         name, type_,
     }))
@@ -322,7 +325,7 @@ fn argument(input: &str) -> IResult<&str, Argument> {
 fn call<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Call> {
     let (input, _) = tag("call")(input)?;
     let (input, _) = multispace1(input)?;
-    let (input, name) = name(input)?;
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag("(")(input)?;
     let (input, args) = separated_list0(separator, |input| expr(ctxt, input))(input)?;
@@ -336,18 +339,18 @@ fn call<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Call> {
 
 /* -------------- */
 
-fn name_type(input: &str) -> IResult<&str, (Name, Type)> {
-    let (input, name) = name(input)?;
+fn name_type<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, (Name, Type)> {
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
-    let (input, type_) = type_(input)?;
+    let (input, type_) = type_(ctxt, input)?;
 
     Ok((input, (name, type_)))
 }
 
 fn name_value<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, (Name, Expression)> {
-    let (input, name) = name(input)?;
+    let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = multispace0(input)?;
