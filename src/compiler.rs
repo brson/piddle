@@ -36,9 +36,12 @@ pub enum CompileError {
     UnknownImportModule(String, String),
     #[error("item {2} not found in module {0}/{1}")]
     ItemNotFoundInModule(String, String, String),
+    #[error ("component error")]
+    Component(#[from] hecs::ComponentError),
 }
 
-pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: ast::Expression) -> Result<Code, CompileError> {
+pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: ast::ExpressionHandle) -> Result<Code, CompileError> {
+    let expr = (*compiler.world.get::<ast::Expression>(expr.0)?).clone();
     match expr.expr {
         ExpressionKind::IntrinsicCall(ast::IntrinsicCall::Nop) => {
             Ok(Code::Nop)
@@ -80,7 +83,7 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
             Ok(Code::Composite { fields })
         },
         ExpressionKind::Set(ast::Set { name, type_, expr }) => {
-            let expr = compile_expression(compiler, module, *expr)?;
+            let expr = compile_expression(compiler, module, expr)?;
             Ok(Code::Set(name, Box::new(expr)))
         },
         ExpressionKind::Name(name) => {
@@ -90,7 +93,7 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
             let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
             let name = function.name.clone();
             assert!(!module_ctxt.fn_asts.contains_key(&name));
-            module_ctxt.fn_asts.insert(name.clone(), function);
+            module_ctxt.fn_asts.insert(name.clone(), function.clone());
             Ok(Code::Nop)
         },
         ExpressionKind::Call(call) => {

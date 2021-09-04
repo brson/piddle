@@ -81,7 +81,7 @@ pub fn declaration<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, D
     Ok((input, decl))
 }
 
-pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Expression> {
+pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, ExpressionHandle> {
     let ctxt = RefCell::new(ctxt);
     let (input, expr) = alt((
         map(|input| intrinsic_call(*ctxt.borrow_mut(), input), ExpressionKind::IntrinsicCall),
@@ -110,6 +110,9 @@ pub fn expr<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Expressi
     let expr = Expression {
         expr, type_: None,
     };
+
+    let entity = ctxt.borrow_mut().world.spawn((expr,));
+    let expr = ExpressionHandle(entity);
     Ok((input, expr))
 }
 
@@ -160,7 +163,7 @@ fn set<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, Set> {
     let (input, _) = multispace0(input)?;
     let (input, type_) = type_(ctxt, input)?;
     let (input, _) = multispace1(input)?;
-    let (input, expr) = map(|input| expr(ctxt, input), Box::new)(input)?;
+    let (input, expr) = expr(ctxt, input)?;
 
     Ok((input, Set {
         name, type_, expr,
@@ -352,7 +355,7 @@ fn name_type<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, (Name, 
     Ok((input, (name, type_)))
 }
 
-fn name_value<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, (Name, Expression)> {
+fn name_value<'i>(ctxt: &mut Context, input: &'i str) -> IResult<&'i str, (Name, ExpressionHandle)> {
     let (input, name) = name(ctxt, input)?;
     let (input, _) = multispace0(input)?;
     let (input, _) = tag(":")(input)?;

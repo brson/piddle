@@ -15,7 +15,7 @@ mod interpreter;
 
 mod require;
 
-use ast::Expression;
+use ast::ExpressionHandle;
 use compiler::{Compiler, Code};
 use interpreter::{Environment, Evaluation};
 
@@ -129,7 +129,7 @@ fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Edit
     }
 }
 
-fn read_expression(compiler: &mut Compiler, readline: &mut Editor::<()>) -> Result<Expression, ReadEvalError> {
+fn read_expression(compiler: &mut Compiler, readline: &mut Editor::<()>) -> Result<ExpressionHandle, ReadEvalError> {
     let line = readline.readline("> ")?;
 
     readline.add_history_entry(line.clone());
@@ -145,7 +145,7 @@ fn read_expression(compiler: &mut Compiler, readline: &mut Editor::<()>) -> Resu
     Ok(expr)
 }
 
-fn compile_expression(compiler: &mut Compiler, expr: Expression) -> Result<Code, ReadEvalError> {
+fn compile_expression(compiler: &mut Compiler, expr: ExpressionHandle) -> Result<Code, ReadEvalError> {
     let repl_module = repl_module(&mut compiler.strings);
     Ok(compiler::compile_expression(compiler, &repl_module, expr)?)
 }

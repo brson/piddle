@@ -5,7 +5,7 @@ pub struct Module {
 
 #[derive(Debug, Clone)]
 pub struct Script {
-    pub exprs: Vec<Expression>,
+    pub exprs: Vec<ExpressionHandle>,
 }
 
 #[derive(Debug, Clone)]
@@ -16,6 +16,9 @@ pub enum Declaration {
     ImportAll(ImportAll),
     Function(Function),
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct ExpressionHandle(pub hecs::Entity);
 
 #[derive(Debug, Clone)]
 pub struct Expression {
@@ -60,7 +63,7 @@ pub struct Name {
 pub struct Set {
     pub name: Name,
     pub type_: Type,
-    pub expr: Box<Expression>,
+    pub expr: ExpressionHandle,
 }
 
 #[derive(Debug, Clone)]
@@ -99,7 +102,7 @@ pub struct Make {
 #[derive(Debug, Clone)]
 pub struct StructFieldInitializer {
     pub name: Name,
-    pub value: Expression,
+    pub value: ExpressionHandle,
 }
 
 #[derive(Debug, Clone)]
@@ -129,7 +132,7 @@ pub struct Function {
     pub name: Name,
     pub args: Vec<Argument>,
     pub return_type: Type,
-    pub exprs: Vec<Expression>,
+    pub exprs: Vec<ExpressionHandle>,
 }
 
 #[derive(Debug, Clone)]
@@ -141,7 +144,7 @@ pub struct Argument {
 #[derive(Debug, Clone)]
 pub struct Call {
     pub name: Name,
-    pub args: Vec<Expression>,
+    pub args: Vec<ExpressionHandle>,
 }
 
 impl From<string_interner::DefaultSymbol> for Name {
