@@ -78,7 +78,7 @@ fn run_repl() -> anyhow::Result<()> {
     loop {
         match read_eval(&mut compiler, &mut env, &mut readline) {
             Ok(expr) => {
-                eprintln!("ok: {}", expr);
+                //eprintln!("ok: {}", interpreter::EvalDisplay::Compiler(&expr, &compiler));
             },
             Err(ReadEvalError::Readline(err @ ReadlineError::Eof)) |
             Err(ReadEvalError::Readline(err @ ReadlineError::Interrupted)) => {

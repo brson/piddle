@@ -41,7 +41,7 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
             println!("# runtime");
             println!("## values");
             for (name, value) in &env.values {
-                println!("{}: {}", (tables.name)(*name), value);
+                println!("{}: {}", (tables.name)(*name), EvalDisplay(&value, tables));
             }
             Ok(Evaluation::Nil)
         }
@@ -112,9 +112,11 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
     }
 }
 
-impl std::fmt::Display for Evaluation {
+pub struct EvalDisplay<'a, 'b, 'c, Context>(&'a Evaluation, &'b Tables<'c, Context>);
+
+impl<'a, 'b, 'c, Context> std::fmt::Display for EvalDisplay<'a, 'b, 'c, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
+        match self.0 {
             Evaluation::Nil => {
                 write!(f, "Nil")
             },
@@ -124,8 +126,9 @@ impl std::fmt::Display for Evaluation {
             Evaluation::Composite { fields } => {
                 writeln!(f, "{{ ");
                 for field in fields {
-                    todo!()
-                    //writeln!(f, "    {}: {}", (tables.name)(field.0), (tables.name)(field.1));
+                    let name = (self.1.name)(field.0);
+                    let value = EvalDisplay(&field.1, self.1);
+                    writeln!(f, "    {}: {}", name, value);
                 }
                 write!(f, "}}")
             }
