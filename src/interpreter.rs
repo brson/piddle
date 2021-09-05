@@ -112,9 +112,9 @@ pub fn run_expression<Context>(env: &mut Environment, tables: &Tables<'_, Contex
     }
 }
 
-pub struct EvalDisplay<'a, 'b, 'c, Context>(&'a Evaluation, &'b Tables<'c, Context>);
+pub struct EvalDisplay<'e, 't, 'c, Context>(&'e Evaluation, &'t Tables<'c, Context>);
 
-impl<'a, 'b, 'c, Context> std::fmt::Display for EvalDisplay<'a, 'b, 'c, Context> {
+impl<'e, 't, 'c, Context> std::fmt::Display for EvalDisplay<'e, 't, 'c, Context> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0 {
             Evaluation::Nil => {
