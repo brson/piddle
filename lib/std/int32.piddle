@@ -7,7 +7,13 @@ struct Int32 {
 }
 
 fn wrapping_add(a: Int32, b: Int32) -> Int32 {
-   make Int32 {
-       inner: call int32_wrapping_add(a.inner, b.inner),
-   }
+    set struct Int32 {
+        inner: a_inner,
+    } a
+    set struct Int32 {
+        inner: b_inner,
+    } b
+    make Int32 {
+        inner: call int32_wrapping_add(a_inner, b_inner),
+    }
 }
