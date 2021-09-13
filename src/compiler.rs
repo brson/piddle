@@ -40,7 +40,7 @@ pub enum CompileError {
     Component(#[from] hecs::ComponentError),
 }
 
-pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr: ast::ExpressionHandle) -> Result<Code, CompileError> {
+pub fn compile_expression(compiler: &mut Compiler, ctxt: &mut FunctionContext, expr: ast::ExpressionHandle) -> Result<Code, CompileError> {
     let expr = (*compiler.world.get::<ast::Expression>(expr.0)?).clone();
     match expr.expr {
         ExpressionKind::IntrinsicCall(ast::IntrinsicCall::Nop) => {
@@ -60,11 +60,11 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
             Ok(Code::Nop)
         },
         ExpressionKind::Import(ast::Import { module: from_module, item }) => {
-            import(compiler, module, &from_module, &item)?;
+            import(compiler, &ctxt.module, &from_module, &item)?;
             Ok(Code::Nop)
         }
         ExpressionKind::ImportAll(ast::ImportAll { module: from_module }) => {
-            import_all(compiler, module, &from_module)?;
+            import_all(compiler, &ctxt.module, &from_module)?;
             Ok(Code::Nop)
         }
         ExpressionKind::IntrinsicLiteral(ast::IntrinsicLiteral::Int32(v)) => {
@@ -77,30 +77,30 @@ pub fn compile_expression(compiler: &mut Compiler, module: &ast::ModuleId, expr:
         },
         ExpressionKind::Make(ast::Make { name, fields }) => {
             let fields = fields.into_iter().map(|field| {
-                let expr = compile_expression(compiler, module, field.value)?;
+                let expr = compile_expression(compiler, ctxt, field.value)?;
                 Ok((field.name, Box::new(expr)))
             }).collect::<Result<Vec<_>, CompileError>>()?;
             Ok(Code::Composite { fields })
         },
         ExpressionKind::Set(ast::Set { name, type_, expr }) => {
-            let expr = compile_expression(compiler, module, expr)?;
+            let expr = compile_expression(compiler, ctxt, expr)?;
             Ok(Code::Set(name, Box::new(expr)))
         },
         ExpressionKind::Name(name) => {
             Ok(Code::Read(name))
         },
         ExpressionKind::Function(function) => {
-            let mut module_ctxt = compiler.modules.get_mut(module).expect("module");
+            let mut module_ctxt = compiler.modules.get_mut(&ctxt.module).expect("module");
             let name = function.name.clone();
             assert!(!module_ctxt.fn_asts.contains_key(&name));
             module_ctxt.fn_asts.insert(name.clone(), function.clone());
             Ok(Code::Nop)
         },
         ExpressionKind::Call(call) => {
-            compile_function(compiler, module, &call.name)?;
+            compile_function(compiler, &ctxt.module, &call.name)?;
             let mut code_args = vec![];
             for arg in call.args {
-                let code_arg = compile_expression(compiler, module, arg)?;
+                let code_arg = compile_expression(compiler, ctxt, arg)?;
                 code_args.push(code_arg);
             }
             Ok(Code::Call {
@@ -201,8 +201,10 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &ast:
 
         drop(module_ctxt);
 
+        let mut fn_ctxt = FunctionContext::new(name.clone(), module.clone());
+
         for expr in ast.exprs {
-            let code = compile_expression(compiler, module, expr)?;
+            let code = compile_expression(compiler, &mut fn_ctxt, expr)?;
             codes.push(code);
         }
 
@@ -243,8 +245,10 @@ fn compile_function(compiler: &mut Compiler, module: &ast::ModuleId, name: &ast:
 
         drop(other_module_ctxt);
 
+        let mut fn_ctxt = FunctionContext::new(name.clone(), other_module.clone());
+
         for expr in ast.exprs {
-            let code = compile_expression(compiler, &other_module, expr)?;
+            let code = compile_expression(compiler, &mut fn_ctxt, expr)?;
             codes.push(code);
         }
 
@@ -273,6 +277,19 @@ pub struct ModuleContext {
     fn_asts: HashMap<ast::Name, ast::Function>,
     pub fns: HashMap<ast::Name, CompiledFunction>,
     pub fn_imports: HashMap<ast::Name, ast::ModuleId>,
+}
+
+pub struct FunctionContext {
+    name: ast::Name,
+    module: ast::ModuleId,
+}
+
+impl FunctionContext {
+    pub fn new(name: ast::Name, module: ast::ModuleId) -> FunctionContext {
+        FunctionContext {
+            name, module,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

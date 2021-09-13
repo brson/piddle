@@ -39,6 +39,10 @@ fn run_script(script_file: &str) -> anyhow::Result<()> {
         decls: vec![],
     });
 
+    let repl_fn = compiler.strings.get_or_intern("main");
+    let repl_fn_name = ast::Name::from(repl_fn);
+    let mut fn_ctxt = compiler::FunctionContext::new(repl_fn_name, repl_module);
+
     let mut env = Environment::default();
 
     let text = fs::read_to_string(script_file)?;
@@ -50,7 +54,7 @@ fn run_script(script_file: &str) -> anyhow::Result<()> {
         .map_err(|e| e.map(|e| nom::error::Error::new(e.input.to_string(), e.code)))?;
 
     for expr in script.exprs {
-        let code = compile_expression(&mut compiler, expr)?;
+        let code = compile_expression(&mut compiler, &mut fn_ctxt, expr)?;
         let _ = run_expression(&mut compiler, &mut env, code)?;
     }
 
@@ -64,6 +68,10 @@ fn run_repl() -> anyhow::Result<()> {
         decls: vec![],
     });
 
+    let repl_fn = compiler.strings.get_or_intern("main");
+    let repl_fn_name = ast::Name::from(repl_fn);
+    let mut fn_ctxt = compiler::FunctionContext::new(repl_fn_name, repl_module);
+
     let mut env = Environment::default();
     let mut readline = Editor::<()>::new();
 
@@ -76,7 +84,7 @@ fn run_repl() -> anyhow::Result<()> {
     }
 
     loop {
-        match read_eval(&mut compiler, &mut env, &mut readline) {
+        match read_eval(&mut compiler, &mut fn_ctxt, &mut env, &mut readline) {
             Ok(expr) => {
                 eprintln!("ok: {}", interpreter::EvalDisplay(&expr, &|n| compiler.name(n)));
             },
@@ -112,10 +120,10 @@ enum ReadEvalError {
     RuntimePanic,
 }
 
-fn read_eval(compiler: &mut Compiler, env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
+fn read_eval(compiler: &mut Compiler, fn_ctxt: &mut compiler::FunctionContext, env: &mut Environment, readline: &mut Editor::<()>) -> Result<Evaluation, ReadEvalError> {
     let res = panic::catch_unwind(AssertUnwindSafe(|| {
         let expr = read_expression(compiler, readline)?;
-        let expr = compile_expression(compiler, expr)?;
+        let expr = compile_expression(compiler, fn_ctxt, expr)?;
         let expr = run_expression(compiler, env, expr)?;
 
         Ok(expr)
@@ -145,9 +153,8 @@ fn read_expression(compiler: &mut Compiler, readline: &mut Editor::<()>) -> Resu
     Ok(expr)
 }
 
-fn compile_expression(compiler: &mut Compiler, expr: ExpressionHandle) -> Result<Code, ReadEvalError> {
-    let repl_module = repl_module(&mut compiler.strings);
-    Ok(compiler::compile_expression(compiler, &repl_module, expr)?)
+fn compile_expression(compiler: &mut Compiler, fn_ctxt: &mut compiler::FunctionContext, expr: ExpressionHandle) -> Result<Code, ReadEvalError> {
+    Ok(compiler::compile_expression(compiler, fn_ctxt, expr)?)
 }
 
 fn run_expression(compiler: &mut Compiler, env: &mut Environment, expr: Code) -> Result<Evaluation, ReadEvalError> {
